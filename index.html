@@ -416,8 +416,8 @@
     <div class="card">
       <h2>구글 시트 연동</h2>
       <label class="field" style="margin-bottom:0;"><span>Apps Script 배포 URL</span>
-        <input type="text" id="s-url" placeholder="https://script.google.com/macros/s/.../exec" autocomplete="off" /></label>
-      <div class="hint">결과를 구글 시트로 보내려면 Apps Script 배포 URL을 입력하세요. (<code>google-apps-script.gs</code> 설치 후 생성되는 <code>.../exec</code> 주소) 입력 전에는 전송이 비활성화됩니다.</div>
+        <input type="text" id="s-url" placeholder="기본 연동 URL 사용 중" autocomplete="off" /></label>
+      <div class="hint">기본 구글 시트 연동 URL이 앱에 포함되어 있어 별도 설정 없이 전송됩니다. 다른 시트로 보낼 때만 <code>.../exec</code> 주소를 입력하세요.</div>
       <button class="btn" style="margin-top:14px;" onclick="saveSettings()">저장</button>
     </div>
     <div class="card">
@@ -528,7 +528,7 @@ const RULES = [
 const RULE_PENALTY = 5;
 const WEEKDAYS = ["일","월","화","수","목","금","토"];
 const LS = { hist:"kim_mot_history_v1", set:"kim_mot_settings_v1", draft:"kim_mot_draft_v1" };
-const DEFAULT_SCRIPT_URL = "";
+const DEFAULT_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwc2LY-9Cx1UsRXg5sZ8nwfo6wnXcTIQX0-6eenoTff7SL9FZFT8ENCwryOmseK6VWgZQ/exec";
 
 /* ---------- 앱 버전 & 변경 이력 (최신이 위) ---------- */
 const APP_VERSION = "1.0.0";
@@ -955,7 +955,7 @@ function csv(v){v=String(v??"");return /[",\n\r]/.test(v)?'"'+v.replace(/"/g,'""
 function saveSettings(){
   const url=$("s-url").value.trim();
   const s=getSettings(); s.scriptUrl=url; storageSet(LS.set,JSON.stringify(s));
-  toast(url?"저장했어요":"전송 URL을 비웠어요");
+  toast(url?"저장했어요":"기본 연동 URL을 사용합니다");
 }
 function clearAllData(){
   if(!confirm("저장된 모든 점검 이력을 삭제할까요? 되돌릴 수 없어요.")) return;

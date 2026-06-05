@@ -23,7 +23,7 @@
 
 ## 🚀 사용 방법
 1. `index.html`을 웹 호스팅(GitHub Pages/Netlify 등)에 올리거나 브라우저로 열기
-2. 결과를 구글 시트로 보내려면 `google-apps-script.gs`를 배포한 뒤, 앱 **설정 → Apps Script 배포 URL**에 `.../exec` 주소를 입력 (설정 전에도 점검·CSV 저장은 가능)
+2. 기본 구글 시트 연동 URL이 앱에 포함되어 있어 별도 설정 없이 결과가 전송됩니다. 다른 시트로 보낼 때만 앱 **설정 → Apps Script 배포 URL**을 변경하세요.
 
 ### GitHub Pages로 배포하기
 저장소 **Settings → Pages → Branch: `main` / root** 선택 후 저장하면
