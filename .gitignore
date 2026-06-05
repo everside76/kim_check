@@ -1,0 +1,8 @@
+# 로컬 미리보기/세션 설정 (배포에 불필요)
+.claude/
+
+# OS / 임시 파일
+.DS_Store
+Thumbs.db
+*.tmp
+~$*

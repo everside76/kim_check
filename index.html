@@ -1,0 +1,1010 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+<meta name="theme-color" content="#F5B800" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="김치옥 MOT" />
+<title>김치옥 MOT 점검</title>
+<link rel="manifest" href="manifest.webmanifest" />
+<link rel="icon" type="image/png" sizes="192x192" href="assets/app-icon-192.png" />
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png" />
+<style>
+  :root{
+    --bg:#f5f6f8; --card:#ffffff; --ink:#17191f; --sub:#667085; --line:#e6e8ed;
+    --brand:#F5B800; --brand-d:#c79200; --brand-soft:#fff7df; --on-brand:#1f1500; --brand-ink:#9a7700;
+    --ok:#138a3d; --ok-bg:#eefaf2; --warn:#c46a00; --warn-bg:#fff6e7; --bad:#d32222; --bad-bg:#fff0f0;
+    --gold:#b7791f; --gold-bg:#fff8e6; --nav:#fdfdfd;
+    --shadow:0 12px 30px rgba(20,24,32,.08),0 1px 2px rgba(20,24,32,.05);
+    --shadow-sm:0 6px 16px rgba(20,24,32,.06),0 1px 1px rgba(20,24,32,.04);
+    --radius:12px; --radius-sm:8px;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{ --bg:#14161b; --card:#20242c; --ink:#f3f4f6; --sub:#a5adba; --line:#343944;
+      --brand:#f5b800; --brand-d:#d8a100; --brand-soft:#3a3015; --on-brand:#1f1500; --brand-ink:#f3c63f;
+      --ok:#55d782; --ok-bg:#173423; --warn:#f5b642; --warn-bg:#392a13; --bad:#ff7474; --bad-bg:#3c1b1b;
+      --gold:#f0c35c; --gold-bg:#352b13; --nav:#1b1e25; }
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;padding:0;}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic","맑은 고딕",Roboto,"Noto Sans KR",sans-serif;
+    background:
+      radial-gradient(circle at 50% -12%, rgba(245,184,0,.16), transparent 34%),
+      linear-gradient(180deg,#fbfbfc 0%,var(--bg) 34%,var(--bg) 100%);
+    color:var(--ink); line-height:1.5;
+    -webkit-font-smoothing:antialiased; font-size:16px;
+    padding-bottom:env(safe-area-inset-bottom);
+  }
+  .app{max-width:560px; margin:0 auto; min-height:100vh; position:relative; background:linear-gradient(180deg,rgba(255,255,255,.55),rgba(255,255,255,0) 260px);}
+
+  .appbar{
+    position:sticky; top:0; z-index:50; color:var(--on-brand);
+    padding:calc(env(safe-area-inset-top) + 12px) 16px 12px; display:flex; align-items:center; gap:10px;
+    background-color:var(--brand);
+    background-image:linear-gradient(180deg,#ffce3a,var(--brand));
+    background-size:cover; background-position:center;
+    box-shadow:0 10px 24px rgba(176,128,0,.30); transition:background .2s;
+  }
+  .appbar .back{width:32px; height:32px; font-size:26px; background:rgba(0,0,0,.06); border:1px solid rgba(0,0,0,.12); border-radius:9px; color:var(--on-brand); padding:0; cursor:pointer; line-height:1; visibility:hidden;}
+  .appbar.has-back .back{visibility:visible;}
+  .bar-brand{display:flex; align-items:center; gap:10px; min-width:0; flex:1;}
+  .bar-logo{width:34px; height:34px; border-radius:10px; background:#fff; padding:3px; object-fit:contain; box-shadow:0 4px 12px rgba(0,0,0,.18);}
+  .appbar h1{font-size:17px; font-weight:800; margin:0; flex:1; letter-spacing:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .app-actions{display:flex; align-items:center; gap:6px; flex:0 0 auto;}
+  .icon-btn{
+    width:34px; height:34px; display:inline-flex; align-items:center; justify-content:center;
+    color:var(--on-brand); background:rgba(0,0,0,.06); border:1px solid rgba(0,0,0,.12);
+    border-radius:10px; cursor:pointer; padding:0; font-family:inherit;
+  }
+  .icon-btn .icon{width:19px; height:19px;}
+  .icon-btn:active{transform:scale(.96);}
+
+  .screen{display:none; padding:16px 16px 36px; animation:fade .18s ease;}
+  .screen.active{display:block;}
+  @keyframes fade{from{opacity:0; transform:translateY(4px);} to{opacity:1; transform:none;}}
+
+
+  .card{background:var(--card); border:1px solid var(--line); border-radius:var(--radius); padding:16px; margin-bottom:14px; box-shadow:var(--shadow-sm);}
+  .card h2{font-size:15px; margin:0 0 12px; letter-spacing:0;}
+  .card-title{display:flex; align-items:center; gap:8px;}
+  .icon{display:inline-flex; width:20px; height:20px; align-items:center; justify-content:center; color:currentColor; flex:0 0 auto;}
+  .icon svg{display:block; width:100%; height:100%; stroke:currentColor; fill:none; stroke-width:2; stroke-linecap:round; stroke-linejoin:round;}
+  .intake-card{margin-top:0; position:relative; z-index:1;}
+  label.field{display:block; margin-bottom:11px;}
+  label.field:last-child{margin-bottom:0;}
+  .field > span{display:block; font-size:12px; color:var(--sub); margin-bottom:6px; font-weight:800;}
+  input[type=text], input[type=date], textarea, select{
+    width:100%; padding:11px 14px; border:1px solid var(--line); border-radius:10px;
+    background:#fbfbfc; color:var(--ink); font-size:16px; font-family:inherit; box-shadow:inset 0 1px 0 rgba(255,255,255,.7);
+  }
+  textarea{resize:vertical; min-height:60px;}
+  input:focus,textarea:focus,select:focus{outline:2px solid rgba(245,184,0,.30); border-color:var(--brand); background:#fff;}
+
+  .chips{display:flex; flex-wrap:wrap; gap:8px;}
+  .chip{
+    padding:9px 13px; border:1px solid var(--line); border-radius:10px; background:#fbfbfc;
+    color:var(--ink); font-size:14px; font-weight:700; cursor:pointer; user-select:none; transition:.12s; text-align:center;
+  }
+  .chip.on{background:linear-gradient(180deg,#ffd23f,var(--brand)); border-color:var(--brand); color:var(--on-brand); font-weight:800; box-shadow:0 7px 14px rgba(214,160,0,.30);}
+  .radio-row{display:flex; gap:10px;}
+  .radio-row .chip{flex:1; text-align:center;}
+
+  .btn{
+    display:flex; align-items:center; justify-content:center; gap:8px; width:100%;
+    padding:16px; border:none; border-radius:10px; background:linear-gradient(180deg,#ffd23f,var(--brand)); color:var(--on-brand);
+    font-size:16px; font-weight:850; cursor:pointer; font-family:inherit; transition:.12s; box-shadow:0 12px 20px rgba(214,160,0,.30);
+  }
+  .btn:active{transform:scale(.985);}
+  .btn.secondary{background:var(--card); color:var(--ink); border:1px solid var(--line); box-shadow:var(--shadow-sm);}
+  .btn.ghost{background:#fff; color:var(--brand-ink); border:1px solid rgba(214,160,0,.45); box-shadow:none;}
+  .btn:disabled{opacity:.5; cursor:not-allowed;}
+  .btn-row{display:flex; gap:10px;}
+  .btn-row .btn{margin:0;}
+
+  /* 진행바 + 단계칩 상단 고정 */
+  .check-sticky{
+    position:sticky; top:var(--appbar-h, 52px); z-index:30;
+    background:rgba(245,246,248,.94); backdrop-filter:blur(14px); margin:0 -16px; padding:10px 16px 6px;
+    box-shadow:0 8px 18px -14px rgba(0,0,0,.3);
+  }
+  .progress-wrap{margin:0 0 10px;}
+  .progress-bar{height:10px; background:#e9ebef; border-radius:999px; overflow:hidden;}
+  .progress-bar > i{display:block; height:100%; background:linear-gradient(90deg,var(--brand),#ffd451); width:0; transition:width .25s;}
+  .progress-meta{display:flex; justify-content:space-between; font-size:12px; color:var(--sub); margin-top:6px;}
+
+  .stagenav{display:flex; gap:7px; overflow-x:auto; padding:2px 0 10px; -webkit-overflow-scrolling:touch;}
+  .stagenav::-webkit-scrollbar{display:none;}
+  .stagenav .snav{
+    flex:0 0 auto; padding:8px 12px; border-radius:999px; background:var(--card); border:1px solid var(--line);
+    font-size:13px; font-weight:800; color:var(--sub); cursor:pointer; white-space:nowrap; box-shadow:0 3px 8px rgba(20,24,32,.04);
+  }
+  .stagenav .snav.done{border-color:rgba(19,138,61,.25); background:var(--ok-bg); color:var(--ok);}
+
+  .stage-head{display:flex; align-items:center; gap:8px; margin:22px 2px 10px; font-size:15px; font-weight:900; letter-spacing:0;}
+  .stage-head .stcount{font-size:12px; font-weight:600; color:var(--sub);}
+  .stage-head:first-of-type{margin-top:4px;}
+  .sub-head{margin:6px 2px 10px; font-size:12.5px; font-weight:800; color:var(--brand-ink); letter-spacing:.2px; display:flex; align-items:center; gap:8px;}
+  .sub-head:before,.sub-head:after{content:""; flex:1; height:1px; background:var(--line);}
+
+  .item{background:var(--card); border:1px solid var(--line); border-radius:12px; padding:14px; margin-bottom:10px; box-shadow:var(--shadow-sm);}
+  .item.answered{border-color:rgba(19,138,61,.24); box-shadow:0 0 0 1px rgba(19,138,61,.08),var(--shadow-sm);}
+  .item.flag-T{border-color:rgba(196,106,0,.32);}
+  .item.flag-X{border-color:rgba(211,34,34,.35);}
+  .item-top{display:flex; gap:8px; align-items:flex-start; margin-bottom:12px;}
+  .item-no{font-size:12px; font-weight:900; color:var(--on-brand); background:linear-gradient(180deg,#ffd23f,var(--brand)); border-radius:8px; padding:3px 7px; flex:0 0 auto; min-width:30px; text-align:center;}
+  .tag{font-size:10px; font-weight:800; padding:3px 6px; border-radius:6px; flex:0 0 auto; letter-spacing:.3px;}
+  .tag-S{background:#e0edff; color:#1d4ed8;} .tag-Q{background:#dcfce7; color:#15803d;}
+  .tag-C{background:#f3e8ff; color:#7e22ce;} .tag-SAFE{background:#fee2e2; color:#b91c1c;}
+  .tag-MKT{background:#fef3c7; color:#b45309;} .tag-M{background:#e5e7eb; color:#4b5563;}
+  @media (prefers-color-scheme: dark){
+    .tag-S{background:#1e3358; color:#93b4ff;} .tag-Q{background:#15321f; color:#86efac;}
+    .tag-C{background:#2e1f43; color:#d8b4fe;} .tag-SAFE{background:#3a1717; color:#fca5a5;}
+    .tag-MKT{background:#332811; color:#fcd34d;} .tag-M{background:#2c313b; color:#9aa1ac;}
+  }
+  .item-text{font-size:14.5px; line-height:1.55; flex:1; font-weight:650;}
+  .item-text .star{color:var(--bad); font-weight:700;}
+  .ans-row{display:flex; gap:8px; margin-bottom:2px;}
+  .ans{flex:1; min-height:64px; padding:10px 4px; border:1px solid var(--line); border-radius:10px; background:#fff; color:var(--ink); font-size:14px; font-weight:800; cursor:pointer; text-align:center; transition:.1s;}
+  .ans .sym{font-size:23px; display:block; line-height:1.08;}
+  .ans .lbl{font-size:11px; font-weight:600; color:var(--sub);}
+  .ans.sel-O{background:var(--ok-bg); border-color:var(--ok); color:var(--ok);}
+  .ans.sel-T{background:var(--warn-bg); border-color:var(--warn); color:var(--warn);}
+  .ans.sel-X{background:var(--bad-bg); border-color:var(--bad); color:var(--bad);}
+  .ans.sel-O .lbl,.ans.sel-T .lbl,.ans.sel-X .lbl{color:inherit;}
+  .bonus-btn{margin-top:10px; width:100%; padding:10px; border:1px dashed var(--gold); border-radius:10px; background:var(--gold-bg); color:var(--gold); font-size:13px; font-weight:800; cursor:pointer; font-family:inherit;}
+  .bonus-btn.on{background:var(--gold); color:#fff; border-style:solid;}
+  .note-toggle{margin-top:10px; font-size:12.5px; color:var(--brand-ink); background:none; border:none; padding:4px 0; cursor:pointer; font-weight:700; display:inline-flex; align-items:center; gap:5px; font-family:inherit;}
+  .note-toggle .icon{width:16px; height:16px;}
+  .note-box{margin-top:8px; display:none;}
+  .note-box.open{display:block;}
+
+  .rule{background:var(--card); border:1px solid var(--line); border-radius:12px; padding:14px; margin-bottom:10px; box-shadow:var(--shadow-sm);}
+  .rule.on{border-color:var(--bad); background:var(--bad-bg);}
+  .rule-head{display:flex; align-items:center; gap:10px;}
+  .rule-no{font-size:12px; font-weight:800; color:#fff; background:var(--bad); border-radius:8px; padding:4px 8px;}
+  .rule-key{font-weight:800; font-size:15px;}
+  .rule-desc{font-size:13px; color:var(--sub); margin-top:6px;}
+  .switch{margin-left:auto; flex:0 0 auto; width:52px; height:30px; border-radius:99px; background:var(--line); position:relative; cursor:pointer; transition:.15s;}
+  .switch > i{position:absolute; top:3px; left:3px; width:24px; height:24px; border-radius:50%; background:#fff; transition:.15s; box-shadow:0 1px 3px rgba(0,0,0,.3);}
+  .switch.on{background:var(--bad);}
+  .switch.on > i{left:25px;}
+
+  .score-card{text-align:center; padding:26px 16px; position:relative; overflow:hidden;}
+  .score-card:after{content:""; position:absolute; right:-42px; bottom:-58px; width:170px; height:170px; background:url("assets/kimchiok-mark.png") center/contain no-repeat; opacity:.06; pointer-events:none;}
+  .score-num{font-size:64px; font-weight:950; line-height:1; letter-spacing:0; color:var(--brand-ink);}
+  .score-num small{font-size:22px; font-weight:700; color:var(--sub);}
+  .grade{display:inline-block; margin-top:10px; padding:6px 18px; border-radius:99px; font-size:18px; font-weight:900; letter-spacing:1px;}
+  .grade-S{background:var(--ok-bg); color:var(--ok);} .grade-A{background:#e0edff; color:#1d4ed8;}
+  .grade-B{background:var(--warn-bg); color:var(--warn);} .grade-C{background:var(--bad-bg); color:var(--bad);}
+  .stat-row{display:flex; gap:8px; margin-top:18px;}
+  .stat{flex:1; background:#fbfbfc; border:1px solid var(--line); border-radius:10px; padding:10px 6px;}
+  .stat b{display:block; font-size:20px;} .stat span{font-size:11px; color:var(--sub);}
+  .bd-list{margin:0; padding:0; list-style:none;}
+  .bd-item{display:flex; gap:10px; padding:11px 0; border-bottom:1px solid var(--line); font-size:13.5px; align-items:flex-start;}
+  .bd-item:last-child{border-bottom:none;}
+  .bd-flag{flex:0 0 auto; font-size:11px; font-weight:800; padding:3px 7px; border-radius:6px;}
+  .bd-flag.T{background:var(--warn-bg); color:var(--warn);} .bd-flag.X{background:var(--bad-bg); color:var(--bad);}
+  .bd-flag.R{background:var(--bad); color:#fff;}
+  .stage-score{display:flex; justify-content:space-between; padding:9px 0; border-bottom:1px solid var(--line); font-size:14px;}
+  .stage-score:last-child{border-bottom:none;}
+  .stage-score b{color:var(--bad);} .stage-score b.zero{color:var(--ok);}
+
+  .check-summary{font-size:13px; color:var(--sub); text-align:center; margin:12px 0 10px;}
+  .shortcut-guide{display:block; padding:12px; border-radius:10px; background:var(--bg); border:1px solid var(--line);}
+  .inapp-warn{background:var(--bad-bg); border:1px solid var(--bad); border-radius:14px; padding:14px 16px; margin-bottom:14px; font-size:13px; line-height:1.55; color:var(--ink); box-shadow:var(--shadow);}
+  .inapp-warn .ttl{color:var(--bad); font-weight:800; font-size:14px; display:block; margin-bottom:4px;}
+  .inapp-warn .btn{background:var(--bad); color:#fff; margin-top:10px;}
+  .inapp-warn-ios{margin-top:10px; font-size:12px; color:var(--sub);}
+  .item-crit{font-size:12px; color:var(--sub); background:var(--bg); border:1px solid var(--line); border-radius:8px; padding:6px 9px; margin:0 0 10px;}
+
+  .hist{background:var(--card); border:1px solid var(--line); border-radius:12px; padding:14px; margin-bottom:10px; box-shadow:var(--shadow-sm);}
+  .hist-top{display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;}
+  .hist-store{font-weight:800; font-size:15px;}
+  .hist-meta{font-size:12px; color:var(--sub);}
+  .badge{font-size:11px; font-weight:700; padding:3px 8px; border-radius:99px;}
+  .badge.sent{background:var(--ok-bg); color:var(--ok);} .badge.unsent{background:var(--warn-bg); color:var(--warn);}
+  .badge.brand{background:var(--brand-soft); color:var(--brand-ink);}
+  .empty{text-align:center; color:var(--sub); padding:50px 20px; font-size:14px;}
+  .empty .big{font-size:40px; margin-bottom:10px; display:flex; justify-content:center;}
+  .empty .big .icon{width:42px; height:42px;}
+
+  .hint{font-size:12.5px; color:var(--sub); margin-top:8px; line-height:1.55;}
+  .toast{
+    position:fixed; left:50%; bottom:90px; transform:translateX(-50%) translateY(20px);
+    background:var(--ink); color:var(--bg); padding:13px 20px; border-radius:12px; font-size:14px; font-weight:700;
+    opacity:0; pointer-events:none; transition:.25s; z-index:100; max-width:90%; text-align:center; box-shadow:0 4px 16px rgba(0,0,0,.3);
+  }
+  .toast.show{opacity:1; transform:translateX(-50%) translateY(0);}
+  .legend{display:flex; flex-wrap:wrap; gap:6px; margin-top:4px;}
+  .legend .tag{cursor:default;}
+  .req{color:var(--bad);}
+
+  /* 변경 이력 */
+  .cl{background:var(--card); border:1px solid var(--line); border-radius:12px; padding:14px 16px; margin-bottom:12px; box-shadow:var(--shadow-sm);}
+  .cl.cur-ver{border-color:var(--brand);}
+  .cl-ver{display:flex; align-items:center; gap:8px; margin-bottom:8px; flex-wrap:wrap;}
+  .cl-ver b{font-size:16px; color:var(--brand-ink); letter-spacing:-.3px;}
+  .cl-ver .date{font-size:12px; color:var(--sub);}
+  .cl-ver .cur{font-size:10px; font-weight:800; background:var(--brand); color:var(--on-brand); padding:2px 8px; border-radius:99px;}
+  .cl ul{margin:0; padding-left:18px;}
+  .cl li{font-size:13.5px; margin:5px 0; line-height:1.5;}
+  @media (max-width:380px){
+    .screen{padding-left:12px; padding-right:12px;}
+    .btn-row{gap:8px;}
+    .ans{min-height:60px;}
+  }
+  @media (max-width:560px){
+    .screen{padding-top:12px;}
+    .intake-card{padding:14px;}
+    label.field{margin-bottom:8px;}
+    .field > span{margin-bottom:4px;}
+    input[type=text], input[type=date], textarea, select{padding:10px 12px;}
+    .chip{padding:8px 12px;}
+    .btn{padding:14px;}
+    .shortcut-guide{font-size:12px;}
+  }
+  @media (prefers-color-scheme: dark){
+    body{background:linear-gradient(180deg,#181b22 0%,var(--bg) 36%,var(--bg) 100%);}
+    .app{background:linear-gradient(180deg,rgba(255,255,255,.03),rgba(255,255,255,0) 260px);}
+    input[type=text], input[type=date], textarea, select,
+    .chip, .ans, .stat{background:#181b22; color:var(--ink);}
+    input:focus,textarea:focus,select:focus{background:#1f232b;}
+    .check-sticky{background:rgba(20,22,27,.94);}
+    .btn.ghost{background:#20242c;}
+  }
+</style>
+</head>
+<body>
+<svg aria-hidden="true" style="position:absolute;width:0;height:0;overflow:hidden">
+  <symbol id="i-home" viewBox="0 0 24 24"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h5v-6h4v6h5V9.5"/></symbol>
+  <symbol id="i-list" viewBox="0 0 24 24"><path d="M8 6h13M8 12h13M8 18h13"/><path d="M3.5 6h.01M3.5 12h.01M3.5 18h.01"/></symbol>
+  <symbol id="i-settings" viewBox="0 0 24 24"><path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z"/><path d="M19.4 15a1.8 1.8 0 0 0 .36 1.98l.05.05a2 2 0 1 1-2.83 2.83l-.05-.05a1.8 1.8 0 0 0-1.98-.36 1.8 1.8 0 0 0-1.09 1.65V21a2 2 0 1 1-4 0v-.1a1.8 1.8 0 0 0-1.09-1.65 1.8 1.8 0 0 0-1.98.36l-.05.05a2 2 0 1 1-2.83-2.83l.05-.05A1.8 1.8 0 0 0 4.6 15a1.8 1.8 0 0 0-1.65-1.09H3a2 2 0 1 1 0-4h.1A1.8 1.8 0 0 0 4.75 8.8a1.8 1.8 0 0 0-.36-1.98l-.05-.05a2 2 0 1 1 2.83-2.83l.05.05a1.8 1.8 0 0 0 1.98.36A1.8 1.8 0 0 0 10.3 2.7V2a2 2 0 1 1 4 0v.1a1.8 1.8 0 0 0 1.09 1.65 1.8 1.8 0 0 0 1.98-.36l.05-.05a2 2 0 1 1 2.83 2.83l-.05.05a1.8 1.8 0 0 0-.36 1.98c.3.66.93 1.1 1.65 1.1H21a2 2 0 1 1 0 4h-.1A1.8 1.8 0 0 0 19.4 15Z"/></symbol>
+  <symbol id="i-store" viewBox="0 0 24 24"><path d="M4 10h16l-1.2-5.2A2.3 2.3 0 0 0 16.6 3H7.4a2.3 2.3 0 0 0-2.2 1.8L4 10Z"/><path d="M5 10v10h14V10"/><path d="M9 20v-6h6v6"/><path d="M4 10c.5 1.4 2.5 1.4 3 0 .5 1.4 2.5 1.4 3 0 .5 1.4 2.5 1.4 3 0 .5 1.4 2.5 1.4 3 0 .5 1.4 2.5 1.4 3 0"/></symbol>
+  <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 3 5 6v5.5c0 4.2 2.8 7.8 7 9.5 4.2-1.7 7-5.3 7-9.5V6l-7-3Z"/><path d="m9.5 12 1.8 1.8 3.7-4"/></symbol>
+  <symbol id="i-result" viewBox="0 0 24 24"><path d="M4 19V5"/><path d="M8 17V9"/><path d="M12 17V7"/><path d="M16 17v-5"/><path d="M20 17v-3"/><path d="M3 19h18"/></symbol>
+  <symbol id="i-send" viewBox="0 0 24 24"><path d="m22 2-7 20-4-9-9-4 20-7Z"/><path d="M22 2 11 13"/></symbol>
+  <symbol id="i-download" viewBox="0 0 24 24"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></symbol>
+  <symbol id="i-note" viewBox="0 0 24 24"><path d="M6 3h9l3 3v15H6V3Z"/><path d="M14 3v4h4"/><path d="M8.5 12h7M8.5 16h5"/></symbol>
+  <symbol id="i-alert" viewBox="0 0 24 24"><path d="M12 3 2.8 20h18.4L12 3Z"/><path d="M12 9v5"/><path d="M12 17.5h.01"/></symbol>
+</svg>
+<div class="app">
+  <div class="appbar" id="appbar">
+    <button class="back" id="backBtn" onclick="goBack()">‹</button>
+    <div class="bar-brand">
+      <img class="bar-logo" src="assets/kimchiok-mark.png" alt="김치옥" />
+      <h1 id="barTitle">MOT 점검</h1>
+    </div>
+    <div class="app-actions" aria-label="상단 메뉴">
+      <button class="icon-btn" onclick="showScreen('home')" title="홈"><span class="icon"><svg><use href="#i-home"></use></svg></span></button>
+      <button class="icon-btn" onclick="showScreen('history')" title="점검 이력"><span class="icon"><svg><use href="#i-list"></use></svg></span></button>
+      <button class="icon-btn" onclick="showScreen('settings')" title="설정"><span class="icon"><svg><use href="#i-settings"></use></svg></span></button>
+    </div>
+  </div>
+
+  <!-- HOME -->
+  <section class="screen active" id="screen-home">
+    <div class="inapp-warn" id="inappWarn" style="display:none;">
+      <span class="ttl">⚠️ 메신저 안에서 열렸어요</span>
+      카카오톡 등 메신저 인앱 브라우저에서는 <b>홈 화면 추가가 안 되고, 앱이 제대로 동작하지 않을 수 있어요.</b> 아래 버튼으로 <b>기본 브라우저(Chrome·Safari)</b>에서 열어주세요.
+      <button class="btn" onclick="openExternalBrowser()">기본 브라우저로 열기</button>
+      <div class="inapp-warn-ios" id="inappWarnIos" style="display:none;">아이폰은 화면 <b>오른쪽 아래(또는 위) 메뉴 → 'Safari로 열기'</b>를 눌러도 돼요.</div>
+    </div>
+    <div class="card intake-card">
+      <h2 class="card-title"><span class="icon"><svg><use href="#i-store"></use></svg></span>김치옥 점검 정보</h2>
+      <label class="field"><span>지점명 <i class="req">*</i></span>
+        <input type="text" id="f-store" placeholder="예) 강남점" autocomplete="off" />
+        <div class="hint"><b>지점명만</b> 입력하세요. (예: 강남점, 역삼점)</div></label>
+      <label class="field"><span>피점검자 (대상 직원)</span>
+        <input type="text" id="f-target" placeholder="평가 대상 직원 이름" autocomplete="off" /></label>
+      <label class="field"><span>점검자 <i class="req">*</i></span>
+        <input type="text" id="f-inspector" placeholder="점검하는 사람 이름" autocomplete="off" /></label>
+      <div class="btn-row" style="gap:12px;">
+        <label class="field" style="flex:1;"><span>점검일</span>
+          <input type="date" id="f-date" /></label>
+        <label class="field" style="flex:0 0 96px;"><span>요일</span>
+          <input type="text" id="f-weekday" readonly /></label>
+      </div>
+      <label class="field"><span>점검 구분</span>
+        <div class="chips" id="f-type">
+          <div class="chip" data-v="본사점검">본사점검</div>
+          <div class="chip" data-v="SV점검">SV점검</div>
+        </div>
+      </label>
+      <label class="field" style="margin-bottom:0;"><span>주문 방식 <i class="req">*</i></span>
+        <div class="radio-row" id="f-order">
+          <div class="chip" data-v="직접주문">직접주문</div>
+          <div class="chip" data-v="테이블오더">테이블오더</div>
+        </div>
+        <div class="hint">주문 방식에 따라 전용 점검 항목이 자동으로 바뀌어요.</div>
+      </label>
+    </div>
+    <button class="btn" onclick="startInspection()">점검 시작하기</button>
+    <p class="hint" id="resumeHint" style="display:none; text-align:center;"></p>
+  </section>
+
+  <!-- CHECK -->
+  <section class="screen" id="screen-check">
+    <div class="check-sticky">
+      <div class="progress-wrap">
+        <div class="progress-bar"><i id="progFill"></i></div>
+        <div class="progress-meta"><span id="progText">0 / 0 항목</span><span id="progStore"></span></div>
+      </div>
+      <div class="stagenav" id="stagenav"></div>
+    </div>
+    <div id="itemList"></div>
+    <div class="btn-row" style="margin-top:8px;">
+      <button class="btn ghost" onclick="showScreen('rules')"><span class="icon"><svg><use href="#i-shield"></use></svg></span>절대 금지 10계명</button>
+    </div>
+    <div class="check-summary" id="checkSummary"></div>
+    <button class="btn" onclick="showScreen('result');"><span class="icon"><svg><use href="#i-result"></use></svg></span>결과 보기 →</button>
+  </section>
+
+  <!-- RULES -->
+  <section class="screen" id="screen-rules">
+    <div class="card" style="background:var(--bad-bg); border-color:var(--bad);">
+      <h2 style="margin:0;">❌ 절대 금지 행동 10계명</h2>
+      <p class="hint" style="margin-top:6px;">발생한 항목만 켜세요. <b>체크 1건당 총점에서 5점 추가 감점</b>되며, 세부사항을 반드시 기록해 주세요.</p>
+    </div>
+    <div id="ruleList"></div>
+    <button class="btn" onclick="showScreen('check')">체크리스트로 돌아가기</button>
+    <div class="check-summary" id="ruleSummary"></div>
+    <button class="btn" onclick="showScreen('result');"><span class="icon"><svg><use href="#i-result"></use></svg></span>결과 보기 →</button>
+  </section>
+
+  <!-- RESULT -->
+  <section class="screen" id="screen-result">
+    <div class="card score-card">
+      <div class="score-num" id="r-score">0<small> / 100</small></div>
+      <div class="grade" id="r-grade">-</div>
+      <p class="hint" id="r-bonus" style="margin:8px 0 0; color:var(--gold); font-weight:700; display:none;"></p>
+      <div class="stat-row">
+        <div class="stat"><b id="r-ok" style="color:var(--ok)">0</b><span>○ 이행</span></div>
+        <div class="stat"><b id="r-tri" style="color:var(--warn)">0</b><span>△ 미흡</span></div>
+        <div class="stat"><b id="r-x" style="color:var(--bad)">0</b><span>× 불이행</span></div>
+        <div class="stat"><b id="r-rule" style="color:var(--bad)">0</b><span>위반</span></div>
+      </div>
+      <p class="hint" id="r-unanswered" style="margin-top:14px;"></p>
+    </div>
+
+    <div class="card">
+      <h2>단계별 감점</h2>
+      <div id="r-stages"></div>
+    </div>
+
+    <div class="card" id="r-deduct-card">
+      <h2>감점 항목 상세</h2>
+      <ul class="bd-list" id="r-deducts"></ul>
+    </div>
+
+    <div class="card">
+      <h2>종합 코멘트</h2>
+      <textarea id="r-comment" placeholder="총평, 특이사항, 개선 요청 등을 적어주세요. (선택)"></textarea>
+    </div>
+
+    <button class="btn" id="sendBtn" onclick="sendToSheet()"><span class="icon"><svg><use href="#i-send"></use></svg></span>구글 시트로 결과 전송</button>
+    <div class="btn-row" style="margin-top:12px;">
+      <button class="btn secondary" onclick="downloadCSV()"><span class="icon"><svg><use href="#i-download"></use></svg></span>엑셀(CSV) 저장</button>
+      <button class="btn secondary" onclick="finishToHome()"><span class="icon"><svg><use href="#i-home"></use></svg></span>처음으로</button>
+    </div>
+    <p class="hint" id="sendHint" style="text-align:center;"></p>
+  </section>
+
+  <!-- HISTORY -->
+  <section class="screen" id="screen-history">
+    <div id="histList"></div>
+  </section>
+
+  <!-- SETTINGS -->
+  <section class="screen" id="screen-settings">
+    <div class="card">
+      <h2 class="card-title"><span class="icon"><svg><use href="#i-home"></use></svg></span>홈 화면 바로가기</h2>
+      <p class="hint" style="margin-top:0;">직원 휴대폰 홈 화면에 앱 아이콘을 추가하면 일반 앱처럼 바로 실행할 수 있습니다.</p>
+      <div class="btn-row" style="margin-top:12px;">
+        <button class="btn" id="installBtn" onclick="installShortcut()"><span class="icon"><svg><use href="#i-home"></use></svg></span>바로가기 만들기</button>
+      </div>
+      <div class="hint shortcut-guide" id="shortcutGuide" style="margin-top:12px;">
+        ⚠️ <b>카카오톡·메신저로 받은 링크</b>는 먼저 <b>Chrome / Safari로 열기</b> 후 진행하세요. (메신저 인앱 브라우저는 홈 화면 추가가 제한됩니다)<br>
+        <b>iPhone Safari</b>: 공유 버튼 → 홈 화면에 추가<br>
+        <b>Android Chrome</b>: 오른쪽 위 메뉴 → 앱 설치 또는 홈 화면에 추가<br>
+        브라우저가 자동 설치를 지원하면 위의 바로가기 만들기 버튼으로 바로 추가할 수 있습니다.
+      </div>
+    </div>
+    <div class="card">
+      <h2>구글 시트 연동</h2>
+      <label class="field" style="margin-bottom:0;"><span>Apps Script 배포 URL</span>
+        <input type="text" id="s-url" placeholder="https://script.google.com/macros/s/.../exec" autocomplete="off" /></label>
+      <div class="hint">결과를 구글 시트로 보내려면 Apps Script 배포 URL을 입력하세요. (<code>google-apps-script.gs</code> 설치 후 생성되는 <code>.../exec</code> 주소) 입력 전에는 전송이 비활성화됩니다.</div>
+      <button class="btn" style="margin-top:14px;" onclick="saveSettings()">저장</button>
+    </div>
+    <div class="card">
+      <h2>점검 안내</h2>
+      <div class="hint">평가: ○ 이행=감점 0 / △ 미흡=배점의 절반 / × 불이행=배점 (문항별 가중 배점) · <b>100점 만점 환산</b><br>
+        🚫 절대 금지 10계명 위반: 1건당 −5점<br>
+        등급: S(90%↑) / A(80~89%) / B(70~79%) / C(70% 미만)</div>
+    </div>
+    <div class="card">
+      <h2>데이터 관리</h2>
+      <p class="hint" style="margin-top:0;">점검 이력은 이 휴대폰(브라우저)에만 저장됩니다.</p>
+      <button class="btn secondary" style="color:var(--bad); border-color:var(--bad);" onclick="clearAllData()">모든 이력 삭제</button>
+    </div>
+    <div class="card">
+      <h2>버전 정보</h2>
+      <p class="hint" style="margin-top:0;">현재 버전 <b id="s-version" style="color:var(--brand-ink); font-size:14px;"></b></p>
+      <button class="btn secondary" style="margin-top:10px;" onclick="showScreen('changelog')"><span class="icon"><svg><use href="#i-note"></use></svg></span>변경 이력 보기</button>
+    </div>
+  </section>
+
+  <!-- CHANGELOG -->
+  <section class="screen" id="screen-changelog">
+    <div id="changelogList"></div>
+  </section>
+
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+/* ============================================================
+   김치옥 통합 서비스 MOT 체크리스트 (v2, 35문항 · 7단계)
+   원본: 김치옥_MOT_체크리스트_v2.xlsx
+   MOT 7단계: 입점 → 주문 → 서빙 → 식사중 → 계산·환송 → 퇴식 → 클레임
+   ============================================================ */
+
+/* ---------- 김치옥 v2 — 40항목(7·8·9 주문방식 분기) · 전 항목 구분 S ---------- */
+const ITEMS_KIMCHIOK = [
+  // 입점
+  {no:"1", stage:"입점", type:"S", order:"공통", px:4, text:`고객 입장 즉시 '어서오세요!! 김치옥입니다.' 라고 큰 소리로 인사하는가?`, criteria:`큰 소리 기준: 선창·후창 2명 이상 시 이행으로 판단`},
+  {no:"2", stage:"입점", type:"S", order:"공통", px:2, text:`인사 시 고객을 바라보며 눈을 맞추는가?`},
+  {no:"3", stage:"입점", type:"S", order:"공통", px:2, text:`인사 시 밝은 표정(미소)을 짓는가?`, criteria:`밝은 미소 기준: 치아가 보이는 미소`},
+  {no:"4", stage:"입점", type:"S", order:"공통", px:2, text:`웨이팅 고객에게 대기자 명단 작성 안내와 예상 대기시간을 안내하는가? (예: 대략 5~7분 소요됩니다. 대기자 명단 작성 부탁드립니다.)`, criteria:`만석 안내 기준: 대기 장소·예상 대기시간 안내`},
+  {no:"5", stage:"입점", type:"S", order:"공통", px:2, text:`대기 후 입장 시 '기다려 주셔서 감사합니다' 인사를 하는가?`},
+  // 주문
+  {no:"6", stage:"주문", type:"S", order:"공통", px:2, text:`(저녁) '고기 드실까요? 찜·찌개 드실까요?' 여쭙고 그에 맞춰 테이블 세팅을 준비하는가?`},
+  {no:"7-1", stage:"주문", type:"S", order:"직접주문", px:4, text:`주문 안내 및 추천 메뉴(전략판매메뉴)를 제안하는가? (점심: 점심특선, 저녁: 인분에 맞는 세트메뉴 등)`},
+  {no:"8-1", stage:"주문", type:"S", order:"직접주문", px:2, text:`주문 후 내용을 복창하여 확인하는가?`},
+  {no:"9-1", stage:"주문", type:"S", order:"직접주문", px:2, text:`(저녁) 후식·식사 메뉴 동시 주문 시 제공 타이밍을 확인하여 안내하는가?`},
+  {no:"7-2", stage:"주문", type:"S", order:"테이블오더", px:2, text:`고객이 태블릿 주문에 어려움을 겪을 때 즉시 도움을 제공하는가? (점심: 잘 나가는 메뉴 추천)`},
+  {no:"8-2", stage:"주문", type:"S", order:"테이블오더", px:4, text:`적절한 추천 메뉴(전략판매메뉴)가 상단에 위치해 있는가? (점심: 점심특선, 저녁: 신메뉴 등)`},
+  {no:"9-2", stage:"주문", type:"S", order:"테이블오더", px:2, text:`(저녁) 후식·식사 메뉴 동시 주문 시 제공 타이밍을 확인하여 안내하는가?`},
+  // 서빙
+  {no:"10", stage:"서빙", type:"S", order:"공통", px:2, text:`아기 손님이 있을 때 아기 수저·포크·유아의자 필요 여부를 먼저 제안하는가?`},
+  {no:"11", stage:"서빙", type:"S", order:"공통", px:2, text:`수저·젓가락·냅킨이 충분히 준비되어 있는가?`},
+  {no:"12", stage:"서빙", type:"S", order:"공통", px:2, text:`흰색·밝은색 옷 고객에게 먼저 앞치마 필요 여부를 물어보는가?`},
+  {no:"13", stage:"서빙", type:"S", order:"공통", px:4, text:`물 제공 시 리뷰 이벤트에 대한 안내를 하는가?`},
+  {no:"14", stage:"서빙", type:"S", order:"공통", px:4, text:`메뉴(반찬 포함) 제공 시 '실례하겠습니다' 멘트를 하는가?`},
+  {no:"15", stage:"서빙", type:"S", order:"공통", px:4, text:`뜨거운 음식 제공 시 '뜨거우니 조심하세요' 라고 안내하는가? (예: 엽기땡초, 계란찜 등)`},
+  {no:"16", stage:"서빙", type:"S", order:"공통", px:2, text:`'추가 반찬은 셀프바를 이용해 주세요' 안내를 하는가? (셀프바가 없으면 '직원을 불러주세요' 멘트)`},
+  {no:"17", stage:"서빙", type:"S", order:"공통", px:2, text:`음식 제공이 늦어질 때(15분 이상) 고객에게 양해 멘트와 예상 대기시간을 안내하는가?`},
+  {no:"18", stage:"서빙", type:"S", order:"공통", px:2, sub:"찜·찌개·엽땡불", text:`타이머가 울리면 '실례합니다, 뚜껑 열어드릴게요. 잠시 비켜주실 수 있나요? 맛있게 드세요!' 멘트를 하는가?`, criteria:`찌개: 육수 더 필요하시면 말씀해주세요`},
+  {no:"19", stage:"서빙", type:"S", order:"공통", px:4, sub:"찜·찌개·엽땡불", text:`맛있게 먹는 법에 대한 안내를 하는가?`, criteria:`엽땡불·김치찜 매뉴얼 참고 / 찌개: 사리 넣어 드시면 더 맛있어요`},
+  {no:"20", stage:"서빙", type:"S", order:"공통", px:4, sub:"찜·찌개·엽땡불", text:`콩나물·소세지전·오늘의 반찬에 대해 안내하는가?`},
+  {no:"21", stage:"서빙", type:"S", order:"공통", px:4, sub:"고기류", text:`고기 제공 전, 반찬이 메뉴 기준에 맞게 세팅되었는가? ① 콩나물+고사리+김치(장독대) ② 장아찌류+쌈장·다진마늘·땡초·참기름+분홍소세지 ③ 앞접시(땡마새+안데스소금) ④ 껍데기 주문 시 콩가루`},
+  {no:"22", stage:"서빙", type:"S", order:"공통", px:4, sub:"고기류", text:`고기를 불판에 올리기 전, 온도계로 불판 온도를 확인하는가?`, criteria:`불판 온도계 사용, 200도 이상일 때 올림`},
+  {no:"23", stage:"서빙", type:"S", order:"공통", px:4, sub:"고기류", text:`고기별 굽는 순서를 안내하는가? (두툼삼겹살 → 얇은삼겹살+항정살 → 껍데기)`, criteria:`한쪽에 두툼삼겹살 + 중앙에 얇은삼겹·항정 → 껍데기 마지막`},
+  {no:"24", stage:"서빙", type:"S", order:"공통", px:4, sub:"고기류", text:`두툼삼겹살(또는 삼겹살)을 올리고 기름이 나온 뒤 ①번 반찬을 올려주며, 다 구운 장독대는 퇴식하는가?`, criteria:`① 콩나물+고사리+김치(장독대 제공)`},
+  {no:"25", stage:"서빙", type:"S", order:"공통", px:4, sub:"고기류", text:`맛있게 곁들여 먹는 법에 대한 안내를 하는가?`, criteria:`'맛있게 먹는 법' 매뉴얼 참고`},
+  // 식사중
+  {no:"26", stage:"식사중", type:"S", order:"공통", px:2, text:`식사 중 '음식은 괜찮으세요?' 등 고객 만족 여부를 체크하는가?`},
+  {no:"27", stage:"식사중", type:"S", order:"공통", px:2, text:`(셀프 볶음밥) 사이드 메뉴 제공 시 적절한 안내 멘트를 하는가?`, criteria:`남은 고기·김치를 잘게 잘라 함께 볶고, 마지막에 김가루·참기름을 넣어 드세요 (김치는 셀프바 이용)`},
+  {no:"28", stage:"식사중", type:"S", order:"공통", px:2, text:`(김치말이국수) 사이드 메뉴 제공 시 적절한 안내 멘트를 하는가?`, criteria:`잘게 잘라 숟가락으로 드시면 술안주로 최고예요`},
+  {no:"29", stage:"식사중", type:"S", order:"공통", px:2, text:`(짜게티/엽땡불) 사이드 메뉴 제공 시 적절한 안내 멘트를 하는가?`, criteria:`불판에 공간이 있으면 올려서 고기와 함께 따뜻하게 드시도록 안내`},
+  {no:"30", stage:"식사중", type:"S", order:"공통", px:2, text:`물·반찬 리필을 고객 요청 전에 먼저 물어보는가?`},
+  {no:"31", stage:"식사중", type:"S", order:"공통", px:2, text:`홀 직원은 항상 홀에 있으며 테이블을 수시로 살피는가?`},
+  // 계산 및 환송
+  {no:"32", stage:"계산 및 환송", type:"S", order:"공통", px:2, text:`'감사합니다 고객님! 계산 도와드리겠습니다.' 고객과 눈을 마주 보며 '식사는 맛있게 하셨어요?' 매뉴얼에 맞게 응대하는가?`},
+  {no:"33", stage:"계산 및 환송", type:"S", order:"공통", px:2, text:`쿠폰·재방문 안내, 주차·영수증 필요 여부 멘트를 하는가?`},
+  {no:"34", stage:"계산 및 환송", type:"S", order:"공통", px:4, text:`'감사합니다. 안녕히 가세요!' 환송 인사를 큰 소리로 하는가?`, criteria:`큰 소리 기준: 메아리 2명 이상 시 이행으로 판단`},
+  // 퇴식
+  {no:"35", stage:"퇴식", type:"S", order:"공통", px:2, text:`퇴식 시 매뉴얼에 맞는 행주를 구분 사용하고, 크린콜 등 적절한 세정제를 뿌리고 닦는가?`, criteria:`3가지 색 행주 사용(고기상·찌개상·의자용)`},
+  {no:"36", stage:"퇴식", type:"S", order:"공통", px:2, text:`퇴식 시 테이블에서 짬 정리를 하지 않고, 버싱박스에 바로 담아 한 번에 옮기는가?`},
+  // 클레임
+  {no:"37", stage:"클레임", type:"S", order:"공통", px:2, text:`불만 접수 시 변명 없이 즉시 사과하는가?`},
+  {no:"38", stage:"클레임", type:"S", order:"공통", px:2, text:`고객 말을 끊지 않고 끝까지 듣는가?`},
+  {no:"39", stage:"클레임", type:"S", order:"공통", px:2, text:`해결 방안(교환·환불·추가 서비스)을 제시하는가?`},
+  {no:"40", stage:"클레임", type:"S", order:"공통", px:2, text:`클레임 해결 후 '새로 드린 음식은 괜찮으신가요?' 사후 확인을 하는가?`},
+];
+
+const BRANDS = {
+  "김치옥": { stages:["입점","주문","서빙","식사중","계산 및 환송","퇴식","클레임"], items:ITEMS_KIMCHIOK },
+};
+
+/* ---------- 절대 금지 10계명 (공통) ---------- */
+const RULES = [
+  {no:"01", key:"입점안내", desc:"입점 시 인사나 안내 없이 고객을 방치하기"},
+  {no:"02", key:"흡연",     desc:"유니폼 입고 흡연하기"},
+  {no:"03", key:"폭언",     desc:"고객 앞에서 직원 혼내기"},
+  {no:"04", key:"무응답",   desc:"고객 요청에 대답 안 하기 (실행 여부 관계없이)"},
+  {no:"05", key:"책임전가", desc:"고객 불편사항에 대해 즉시 사과하지 않기"},
+  {no:"06", key:"불친절",   desc:"음식 나올 때 테이블에 던지듯 내려놓기"},
+  {no:"07", key:"오픈준수", desc:"오픈 시간에 영업 준비가 안 되어 있기"},
+  {no:"08", key:"감정행동", desc:"감정 상태를 행동(그릇 소리·집게·카트 등)으로 고객에게 드러내기"},
+  {no:"09", key:"방치",     desc:"고객이 있는데도 직원 전체가 매장을 비우기"},
+  {no:"10", key:"근무태만", desc:"고객이 보이는 장소에서 휴대폰을 오래 하기"},
+];
+
+const RULE_PENALTY = 5;
+const WEEKDAYS = ["일","월","화","수","목","금","토"];
+const LS = { hist:"kim_mot_history_v1", set:"kim_mot_settings_v1", draft:"kim_mot_draft_v1" };
+const DEFAULT_SCRIPT_URL = "";
+
+/* ---------- 앱 버전 & 변경 이력 (최신이 위) ---------- */
+const APP_VERSION = "1.0.0";
+const CHANGELOG = [
+  {v:"1.0.0", date:"2026-06-05", items:[
+    "김치옥 전용 MOT 점검 앱 첫 출시 — MOT 7단계(입점·주문·서빙·식사중·계산/환송·퇴식·클레임) 35문항",
+    "체크리스트 v2 항목별 가중 배점 반영 — 문항마다 불이행 −2/−4, 미흡은 절반 · 100점 만점 환산",
+    "주문방식(직접주문·테이블오더)별 전용 항목 자동 분기",
+    "절대 금지 10계명(위반 1건당 −5점), 점수·등급(S/A/B/C) 자동 계산",
+    "구글 시트 전송, 엑셀(CSV) 저장, 점검 이력, 진행바·단계 네비게이션 상단 고정, 다크모드, 홈 화면 추가(PWA)",
+  ]},
+];
+
+let session = null;
+let navStack = ["home"];
+let deferredInstallPrompt = null;
+
+/* ---------- 유틸 ---------- */
+function $(id){return document.getElementById(id);}
+function esc(s){return String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));}
+function todayStr(){const d=new Date();return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");}
+function weekdayOf(str){const d=new Date(str+"T00:00:00");return isNaN(d)?"":WEEKDAYS[d.getDay()];}
+function uid(){return "MOT-"+Date.now().toString(36)+"-"+Math.floor(performance.now()).toString(36);}
+function toast(msg){const t=$("toast");t.textContent=msg;t.classList.add("show");clearTimeout(t._h);t._h=setTimeout(()=>t.classList.remove("show"),2600);}
+function storageGet(key){try{return localStorage.getItem(key);}catch(e){return null;}}
+function storageSet(key,value){try{localStorage.setItem(key,value);return true;}catch(e){return false;}}
+function storageRemove(key){try{localStorage.removeItem(key);}catch(e){}}
+function getSettings(){try{return JSON.parse(storageGet(LS.set))||{};}catch(e){return {};}}
+function getHistory(){try{return JSON.parse(storageGet(LS.hist))||[];}catch(e){return [];}}
+function saveHistory(arr){storageSet(LS.hist,JSON.stringify(arr));}
+function curBrand(){return BRANDS[session && session.brand] || BRANDS["김치옥"];}
+function icon(id){return `<span class="icon"><svg><use href="#${id}"></use></svg></span>`;}
+function getScriptUrl(){return (getSettings().scriptUrl||DEFAULT_SCRIPT_URL).trim();}
+
+/* ---------- 화면 전환 ---------- */
+const TITLES={home:"김치옥 MOT 점검",check:"체크리스트",rules:"절대 금지 10계명",result:"점검 결과",history:"점검 이력",settings:"설정",changelog:"변경 이력"};
+function showScreen(id, push=true){
+  if(id==="rules"&&session) renderRules();
+  if(id==="changelog") renderChangelog();
+  document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active"));
+  $("screen-"+id).classList.add("active");
+  $("barTitle").innerHTML = (id==="home") ? "MOT 점검" : esc(TITLES[id]||"");
+  $("appbar").classList.toggle("has-back", id!=="home");
+  window.scrollTo(0,0);
+  if(push && navStack[navStack.length-1]!==id) navStack.push(id);
+  if(id==="history") renderHistory();
+  if(id==="settings"){ $("s-url").value=getSettings().scriptUrl||""; $("s-version").textContent="v"+APP_VERSION; }
+  if(id==="check"||id==="rules") updateFooter();
+  if(id==="result"&&session) buildResult();
+}
+function renderChangelog(){
+  $("changelogList").innerHTML=CHANGELOG.map((c,idx)=>`
+    <div class="cl ${idx===0?'cur-ver':''}">
+      <div class="cl-ver"><b>v${esc(c.v)}</b><span class="date">${esc(c.date)}</span>${idx===0?'<span class="cur">현재</span>':''}</div>
+      <ul>${c.items.map(it=>`<li>${esc(it)}</li>`).join("")}</ul>
+    </div>`).join("");
+}
+function goBack(){ navStack.pop(); showScreen(navStack[navStack.length-1]||"home",false); }
+
+/* ---------- 홈 화면 바로가기 ---------- */
+window.addEventListener("beforeinstallprompt", e=>{
+  e.preventDefault();
+  deferredInstallPrompt=e;
+});
+async function installShortcut(){
+  if(deferredInstallPrompt){
+    try{
+      await deferredInstallPrompt.prompt();
+      const choice=await deferredInstallPrompt.userChoice;
+      toast(choice && choice.outcome==="accepted" ? "홈 화면에 추가했어요" : "추가가 취소됐어요");
+    }catch(e){
+      const guide=$("shortcutGuide");
+      if(guide) guide.classList.add("open");
+      toast("브라우저 메뉴에서 홈 화면에 추가해 주세요");
+    }
+    deferredInstallPrompt=null;
+    return;
+  }
+  const guide=$("shortcutGuide");
+  if(guide) guide.classList.add("open");
+  toast("브라우저 메뉴에서 홈 화면에 추가해 주세요");
+}
+
+/* ---------- 홈 ---------- */
+function initHome(){
+  $("f-date").value=todayStr();
+  $("f-weekday").value=weekdayOf(todayStr());
+  $("f-date").addEventListener("change",e=>$("f-weekday").value=weekdayOf(e.target.value));
+  $("f-type").querySelectorAll(".chip").forEach(c=>c.addEventListener("click",()=>c.classList.toggle("on")));
+  $("f-order").querySelectorAll(".chip").forEach(c=>c.addEventListener("click",()=>{
+    $("f-order").querySelectorAll(".chip").forEach(x=>x.classList.remove("on")); c.classList.add("on");
+  }));
+  const draft=loadDraft();
+  if(draft){
+    $("resumeHint").style.display="block";
+    $("resumeHint").innerHTML=`작성 중이던 점검(${esc(draft.store||"")})이 있어요. `+
+      `<a href="#" style="color:var(--brand-ink);font-weight:700" onclick="resumeDraft();return false;">이어서 작성</a> · `+
+      `<a href="#" style="color:var(--sub)" onclick="discardDraft();return false;">삭제</a>`;
+  }
+}
+function startInspection(){
+  const store=$("f-store").value.trim();
+  const target=$("f-target").value.trim();
+  const inspector=$("f-inspector").value.trim();
+  const order=($("f-order").querySelector(".chip.on")||{}).dataset?.v;
+  if(!store){toast("지점명을 입력해 주세요");$("f-store").focus();return;}
+  if(!inspector){toast("점검자를 입력해 주세요");$("f-inspector").focus();return;}
+  if(!order){toast("주문 방식을 선택해 주세요");return;}
+  const types=[...$("f-type").querySelectorAll(".chip.on")].map(c=>c.dataset.v);
+  session={ id:uid(), brand:"김치옥", store, target, inspector,
+    date:$("f-date").value, weekday:$("f-weekday").value,
+    inspectType:types, order, answers:{}, rules:{}, comment:"", sent:false, sentAt:null };
+  saveDraft(); renderCheck(); showScreen("check");
+}
+
+/* ---------- 임시저장 ---------- */
+function saveDraft(){ if(session) storageSet(LS.draft, JSON.stringify(session)); }
+function loadDraft(){ try{return JSON.parse(storageGet(LS.draft));}catch(e){return null;} }
+function discardDraft(){ storageRemove(LS.draft); $("resumeHint").style.display="none"; toast("임시저장을 삭제했어요"); }
+function resumeDraft(){ session=loadDraft(); if(!session)return; renderCheck(); showScreen("check"); }
+
+/* ---------- 점검 항목 렌더 ---------- */
+function visibleItems(){ return curBrand().items.filter(i=>i.order==="공통"||i.order===session.order); }
+function renderCheck(){
+  $("progStore").textContent=session.brand+" · "+session.store;
+  const items=visibleItems();
+  const nav=curBrand().stages.filter(st=>items.some(i=>i.stage===st));
+  $("stagenav").innerHTML=nav.map(st=>`<div class="snav" data-st="${esc(st)}" onclick="jumpStage('${esc(st)}')">${esc(st)}</div>`).join("");
+  let html="";
+  nav.forEach(st=>{
+    const its=items.filter(i=>i.stage===st);
+    html+=`<div class="stage-head" id="st-${esc(st)}">▶ ${esc(st)} <span class="stcount">(${its.length})</span></div>`;
+    let lastSub="";
+    its.forEach(it=>{
+      if(it.sub && it.sub!==lastSub){ html+=`<div class="sub-head">${esc(it.sub)}</div>`; lastSub=it.sub; }
+      html+=itemCard(it);
+    });
+  });
+  $("itemList").innerHTML=html;
+  updateFooter(); refreshStageNav();
+}
+function itemCard(it){
+  const a=session.answers[it.no]||{};
+  const sel=a.value||"";
+  const noteOpen=a.note?"open":"";
+  const star=esc(it.text).replace(/(★[^)]*\))/g,'<span class="star">$1</span>');
+  const px=itemMax(it);
+  const bonus = it.bonus ? `<button class="bonus-btn ${a.bonusOn?'on':''}" onclick="toggleBonus('${esc(it.no)}')">★ ${esc(it.bonusLabel||'가산')} 가산 +${it.bonus}${a.bonusOn?' (적용됨)':''}</button>` : "";
+  return `<div class="item ${sel?'answered':''} ${sel==='T'?'flag-T':''} ${sel==='X'?'flag-X':''}" id="item-${esc(it.no)}">
+    <div class="item-top">
+      <span class="item-no">${esc(it.no)}</span>
+      <span class="item-text">${star}</span>
+    </div>
+    ${it.criteria ? `<div class="item-crit">📌 ${esc(it.criteria)}</div>` : ""}
+    <div class="ans-row">
+      <div class="ans ${sel==='O'?'sel-O':''}" onclick="setAnswer('${esc(it.no)}','O')"><span class="sym">○</span><span class="lbl">이행</span></div>
+      <div class="ans ${sel==='T'?'sel-T':''}" onclick="setAnswer('${esc(it.no)}','T')"><span class="sym">△</span><span class="lbl">미흡 −${px/2}</span></div>
+      <div class="ans ${sel==='X'?'sel-X':''}" onclick="setAnswer('${esc(it.no)}','X')"><span class="sym">✕</span><span class="lbl">불이행 −${px}</span></div>
+    </div>
+    ${bonus}
+    <button class="note-toggle" onclick="toggleNote('${esc(it.no)}')">${icon('i-note')} 비고 ${a.note?'(작성됨)':''}</button>
+    <div class="note-box ${noteOpen}" id="note-${esc(it.no)}">
+      <textarea placeholder="특이사항·증빙 메모" oninput="setNote('${esc(it.no)}',this.value)">${esc(a.note||"")}</textarea>
+    </div>
+  </div>`;
+}
+function rerenderCard(no){
+  const it=curBrand().items.find(i=>i.no===no);
+  const card=$("item-"+no); if(!card||!it) return;
+  const tmp=document.createElement("div"); tmp.innerHTML=itemCard(it);
+  card.replaceWith(tmp.firstElementChild);
+}
+function setAnswer(no,val){
+  if(!session.answers[no]) session.answers[no]={};
+  const cur=session.answers[no].value;
+  session.answers[no].value = (cur===val)? "" : val;
+  saveDraft(); rerenderCard(no); updateFooter(); refreshStageNav();
+}
+function toggleBonus(no){
+  if(!session.answers[no]) session.answers[no]={};
+  session.answers[no].bonusOn=!session.answers[no].bonusOn;
+  saveDraft(); rerenderCard(no);
+}
+function toggleNote(no){ const b=$("note-"+no); if(b) b.classList.toggle("open"); }
+function setNote(no,v){ if(!session.answers[no]) session.answers[no]={}; session.answers[no].note=v; saveDraft(); }
+function jumpStage(st){ const el=$("st-"+st); if(el) el.scrollIntoView({behavior:"smooth",block:"start"}); }
+
+function answeredCount(){ return visibleItems().filter(i=>(session.answers[i.no]||{}).value).length; }
+function updateFooter(){
+  const items=visibleItems(); const done=answeredCount();
+  $("progFill").style.width=(items.length?Math.round(done/items.length*100):0)+"%";
+  $("progText").textContent=`${done} / ${items.length} 항목`;
+  const ruleCount=Object.values(session?.rules||{}).filter(r=>r.occurred).length;
+  const text = `응답 ${done}/${items.length}` + (ruleCount?` · 위반 ${ruleCount}건`:"") + (done<items.length?` · 미응답 ${items.length-done}건`:" · 전부 응답 완료");
+  if($("checkSummary")) $("checkSummary").textContent=text;
+  if($("ruleSummary")) $("ruleSummary").textContent=text;
+}
+function refreshStageNav(){
+  const items=visibleItems();
+  document.querySelectorAll("#stagenav .snav").forEach(n=>{
+    const st=n.dataset.st; const its=items.filter(i=>i.stage===st);
+    n.classList.toggle("done", its.length>0 && its.every(i=>(session.answers[i.no]||{}).value));
+  });
+}
+
+/* ---------- 10계명 ---------- */
+function renderRules(){
+  $("ruleList").innerHTML=RULES.map(r=>{
+    const st=session.rules[r.no]||{};
+    const on=st.occurred?"on":"";
+    return `<div class="rule ${on}" id="rule-${r.no}">
+      <div class="rule-head">
+        <span class="rule-no">${r.no}</span>
+        <span class="rule-key">${esc(r.key)}</span>
+        <div class="switch ${on}" onclick="toggleRule('${r.no}')"><i></i></div>
+      </div>
+      <div class="rule-desc">${esc(r.desc)}</div>
+      <div class="note-box ${st.occurred?'open':''}" id="raction-${r.no}">
+        <textarea placeholder="세부사항 (발생 상황·내용 기록)" oninput="setRuleAction('${r.no}',this.value)">${esc(st.action||"")}</textarea>
+      </div>
+    </div>`;
+  }).join("");
+}
+function toggleRule(no){
+  if(!session.rules[no]) session.rules[no]={};
+  session.rules[no].occurred=!session.rules[no].occurred;
+  $("rule-"+no).classList.toggle("on",session.rules[no].occurred);
+  $("rule-"+no).querySelector(".switch").classList.toggle("on",session.rules[no].occurred);
+  $("raction-"+no).classList.toggle("open",session.rules[no].occurred);
+  saveDraft(); updateFooter();
+}
+function setRuleAction(no,v){ if(!session.rules[no]) session.rules[no]={}; session.rules[no].action=v; saveDraft(); }
+
+/* ---------- 점수 계산 ---------- */
+function itemMax(it){ return (it && it.px) ? it.px : 2; }          // 불이행 시 차감(=문항 배점)
+function penaltyOf(it, v){ const m=itemMax(it); return v==="X"?m : v==="T"?m/2 : 0; }
+function compute(){
+  const items=visibleItems();
+  let ok=0,tri=0,x=0,deduct=0,maxDeduct=0,unanswered=0,bonus=0;
+  const stageMap={};
+  items.forEach(i=>{
+    const a=session.answers[i.no]||{};
+    const v=a.value;
+    maxDeduct+=itemMax(i);
+    if(i.bonus && a.bonusOn) bonus+=i.bonus;
+    if(!v){unanswered++; return;}
+    if(v==="O")ok++; else if(v==="T")tri++; else if(v==="X")x++;
+    const p=penaltyOf(i, v); deduct+=p;
+    stageMap[i.stage]=(stageMap[i.stage]||0)+p;
+  });
+  const ruleViolations=RULES.filter(r=>(session.rules[r.no]||{}).occurred);
+  const ruleDeduct=ruleViolations.length*RULE_PENALTY;
+  const base = maxDeduct>0 ? (1-deduct/maxDeduct)*100 : 100;   // 문항별 가중 배점 → 100점 만점 환산
+  const score=Math.max(0, Math.min(100, Math.round(base-ruleDeduct+bonus)));
+  const grade=score>=90?"S":score>=80?"A":score>=70?"B":"C";
+  return {items,ok,tri,x,deduct,maxDeduct,unanswered,bonus,ruleViolations,ruleDeduct,score,grade,stageMap};
+}
+
+/* ---------- 결과 화면 ---------- */
+function buildResult(){
+  const r=compute();
+  session.comment=$("r-comment").value;
+  $("r-score").innerHTML=`${r.score}<small> / 100</small>`;
+  const g=$("r-grade"); g.textContent="등급 "+r.grade; g.className="grade grade-"+r.grade;
+  $("r-ok").textContent=r.ok; $("r-tri").textContent=r.tri; $("r-x").textContent=r.x; $("r-rule").textContent=r.ruleViolations.length;
+  const b=$("r-bonus");
+  if(r.bonus>0){ b.style.display="block"; b.textContent=`★ 가산점 +${r.bonus}점 반영됨`; } else { b.style.display="none"; }
+  $("r-unanswered").innerHTML = r.unanswered
+    ? `⚠️ 미응답 <b>${r.unanswered}</b>건은 감점에 포함되지 않았어요.`
+    : `✅ 모든 항목에 응답했어요.`;
+  $("r-stages").innerHTML=curBrand().stages.filter(st=>r.items.some(i=>i.stage===st)).map(st=>{
+    const d=r.stageMap[st]||0;
+    return `<div class="stage-score"><span>${esc(st)}</span><b class="${d===0?'zero':''}">${d===0?'감점 없음':'−'+d+'점'}</b></div>`;
+  }).join("");
+  const rows=[];
+  r.items.forEach(i=>{
+    const a=session.answers[i.no]||{};
+    if(a.value==="T"||a.value==="X"){
+      rows.push(`<li class="bd-item"><span class="bd-flag ${a.value}">${a.value==='T'?'△ 미흡':'✕ 불이행'}</span>
+        <div><b>${esc(i.no)}.</b> ${esc(i.text)}${a.note?`<br><span style="color:var(--sub)">└ ${esc(a.note)}</span>`:''}</div></li>`);
+    }
+  });
+  r.ruleViolations.forEach(rl=>{
+    const act=(session.rules[rl.no]||{}).action;
+    rows.push(`<li class="bd-item"><span class="bd-flag R">위반 ${rl.no}</span>
+      <div><b>${esc(rl.key)}</b> — ${esc(rl.desc)}${act?`<br><span style="color:var(--sub)">└ 세부사항: ${esc(act)}</span>`:''}</div></li>`);
+  });
+  $("r-deduct-card").style.display = rows.length? "block":"none";
+  $("r-deducts").innerHTML=rows.join("");
+}
+function finishToHome(){
+  persistCurrent(false);
+  storageRemove(LS.draft);
+  session=null; resetHomeForm();
+  showScreen("home"); navStack=["home"];
+  toast("점검을 저장했어요");
+}
+function persistCurrent(sent){
+  if(!session) return;
+  const r=compute();
+  session.comment=$("r-comment")?$("r-comment").value:session.comment;
+  session.result={score:r.score,grade:r.grade,ok:r.ok,tri:r.tri,x:r.x,bonus:r.bonus,
+    unanswered:r.unanswered,ruleViolations:r.ruleViolations.length,total:r.items.length};
+  session.savedAt=todayStr();
+  if(sent){session.sent=true; session.sentAt=new Date().toISOString();}
+  const hist=getHistory();
+  const idx=hist.findIndex(h=>h.id===session.id);
+  if(idx>=0) hist[idx]=JSON.parse(JSON.stringify(session));
+  else hist.unshift(JSON.parse(JSON.stringify(session)));
+  saveHistory(hist);
+}
+function resetHomeForm(){
+  $("f-store").value=""; $("f-target").value=""; $("f-inspector").value="";
+  $("f-date").value=todayStr(); $("f-weekday").value=weekdayOf(todayStr());
+  $("f-type").querySelectorAll(".chip.on").forEach(c=>c.classList.remove("on"));
+  $("f-order").querySelectorAll(".chip.on").forEach(c=>c.classList.remove("on"));
+  $("resumeHint").style.display="none";
+  if($("r-comment")) $("r-comment").value="";
+}
+
+/* ---------- 구글 시트 전송 ---------- */
+function buildPayload(){
+  const r=compute();
+  return {
+    id:session.id, sentAt:new Date().toISOString(),
+    brand:session.brand, store:session.store, target:session.target||"", inspector:session.inspector,
+    date:session.date, weekday:session.weekday,
+    inspectType:session.inspectType.join(","), order:session.order,
+    score:r.score, grade:r.grade, bonus:r.bonus,
+    ok:r.ok, tri:r.tri, x:r.x, unanswered:r.unanswered,
+    ruleViolations:r.ruleViolations.length, total:r.items.length,
+    comment:($("r-comment").value||"").trim(),
+    items:r.items.map(i=>{
+      const a=session.answers[i.no]||{};
+      return {no:i.no, stage:i.stage, type:i.type, text:i.text,
+        value:a.value||"", label:({O:"이행",T:"미흡",X:"불이행"})[a.value]||"미응답",
+        penalty:penaltyOf(i, a.value), max:itemMax(i), bonus:(i.bonus&&a.bonusOn)?i.bonus:0, note:a.note||""};
+    }),
+    rules:r.ruleViolations.map(rl=>({no:rl.no,key:rl.key,desc:rl.desc,action:(session.rules[rl.no]||{}).action||""}))
+  };
+}
+async function sendToSheet(){
+  const url=getScriptUrl();
+  if(!url){ toast("구글 시트 URL을 확인해 주세요"); showScreen("settings"); return; }
+  const btn=$("sendBtn"); btn.disabled=true; btn.textContent="전송 중…";
+  $("sendHint").textContent="구글 시트로 전송하고 있어요…";
+  const payload=buildPayload();
+  try{
+    const res=await fetch(url,{ method:"POST", headers:{"Content-Type":"text/plain;charset=utf-8"}, body:JSON.stringify(payload) });
+    let okFlag=res.ok;
+    try{ const j=await res.json(); okFlag = j && (j.result==="success"||j.ok); }catch(e){}
+    if(okFlag){
+      persistCurrent(true); storageRemove(LS.draft);
+      btn.textContent="✅ 전송 완료";
+      $("sendHint").innerHTML="구글 시트에 저장됐어요. <b>처음으로</b>를 눌러 새 점검을 시작하세요.";
+      toast("구글 시트로 전송 완료!");
+    }else{ throw new Error("server"); }
+  }catch(err){
+    persistCurrent(false);
+    btn.disabled=false; btn.textContent="🔁 다시 전송";
+    $("sendHint").innerHTML="⚠️ 전송 실패. 결과는 휴대폰에 저장됐어요. 네트워크 확인 후 다시 시도하거나, <b>이력</b>에서 재전송하세요.";
+    toast("전송 실패 — 로컬에 저장됨");
+  }
+}
+
+/* ---------- 이력 ---------- */
+function renderHistory(){
+  const hist=getHistory();
+  if(!hist.length){ $("histList").innerHTML=`<div class="empty"><div class="big">${icon('i-list')}</div>아직 저장된 점검이 없어요.</div>`; return; }
+  $("histList").innerHTML=hist.map(h=>{
+    const rs=h.result||{};
+    return `<div class="hist">
+      <div class="hist-top">
+        <span class="hist-store"><span class="badge brand">${esc(h.brand||'')}</span> ${esc(h.store)}</span>
+        <span class="badge ${h.sent?'sent':'unsent'}">${h.sent?'전송됨':'미전송'}</span>
+      </div>
+      <div class="hist-meta">${esc(h.date)} (${esc(h.weekday)}) · ${h.target?'대상 '+esc(h.target)+' · ':''}점검 ${esc(h.inspector)} · ${esc(h.order)}</div>
+      <div style="display:flex;align-items:center;gap:12px;margin-top:10px;">
+        <span class="grade grade-${rs.grade||'C'}" style="margin:0;padding:4px 12px;font-size:14px;">${rs.score??'-'}점 · ${rs.grade||'-'}</span>
+        <span class="hist-meta">△${rs.tri||0} ✕${rs.x||0} 위반 ${rs.ruleViolations||0}${rs.bonus?(' ★+'+rs.bonus):''}</span>
+      </div>
+      <div class="btn-row" style="margin-top:12px;">
+        ${h.sent?'':`<button class="btn ghost" style="padding:10px;font-size:14px;" onclick="resendHistory('${h.id}')">🔁 재전송</button>`}
+        <button class="btn secondary" style="padding:10px;font-size:14px;" onclick="deleteHistory('${h.id}')">삭제</button>
+      </div>
+    </div>`;
+  }).join("");
+}
+async function resendHistory(id){
+  const hist=getHistory(); const h=hist.find(x=>x.id===id); if(!h)return;
+  session=JSON.parse(JSON.stringify(h));
+  if(!$("r-comment").value) $("r-comment").value=h.comment||"";
+  await sendToSheet(); renderHistory();
+}
+function deleteHistory(id){ saveHistory(getHistory().filter(h=>h.id!==id)); renderHistory(); toast("삭제했어요"); }
+
+/* ---------- CSV ---------- */
+function downloadCSV(){
+  const r=compute();
+  const lines=[];
+  lines.push(["브랜드","지점","피점검자","점검자","점검일","요일","점검구분","주문방식","총점","등급","가산점"].join(","));
+  lines.push([session.brand,session.store,session.target||"",session.inspector,session.date,session.weekday,session.inspectType.join("/"),session.order,r.score,r.grade,r.bonus].map(csv).join(","));
+  lines.push("");
+  lines.push(["No","단계","구분","항목","응답","감점","비고"].join(","));
+  r.items.forEach(i=>{
+    const a=session.answers[i.no]||{};
+    lines.push([i.no,i.stage,i.type,i.text,({O:"이행",T:"미흡",X:"불이행"})[a.value]||"미응답",penaltyOf(i,a.value),a.note||""].map(csv).join(","));
+  });
+  if(r.ruleViolations.length){
+    lines.push(""); lines.push(["10계명 위반","키워드","내용","세부사항"].join(","));
+    r.ruleViolations.forEach(rl=>lines.push([rl.no,rl.key,rl.desc,(session.rules[rl.no]||{}).action||""].map(csv).join(",")));
+  }
+  if(($("r-comment").value||"").trim()){ lines.push(""); lines.push(["종합코멘트",($("r-comment").value).trim()].map(csv).join(",")); }
+  const blob=new Blob(["﻿"+lines.join("\r\n")],{type:"text/csv;charset=utf-8"});
+  const a=document.createElement("a");
+  a.href=URL.createObjectURL(blob);
+  a.download=`MOT_${session.brand}_${session.store}_${session.date}.csv`;
+  a.click(); URL.revokeObjectURL(a.href);
+  toast("CSV 파일을 저장했어요");
+}
+function csv(v){v=String(v??"");return /[",\n\r]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v;}
+
+/* ---------- 설정 ---------- */
+function saveSettings(){
+  const url=$("s-url").value.trim();
+  const s=getSettings(); s.scriptUrl=url; storageSet(LS.set,JSON.stringify(s));
+  toast(url?"저장했어요":"전송 URL을 비웠어요");
+}
+function clearAllData(){
+  if(!confirm("저장된 모든 점검 이력을 삭제할까요? 되돌릴 수 없어요.")) return;
+  storageRemove(LS.hist); storageRemove(LS.draft);
+  renderHistory(); toast("모든 이력을 삭제했어요");
+}
+
+/* ---------- 앱바 높이 측정(고정 바 위치 보정) ---------- */
+function setAppbarVar(){
+  var h=$("appbar").offsetHeight;
+  if(h) document.documentElement.style.setProperty("--appbar-h", h+"px");
+}
+window.addEventListener("resize", setAppbarVar);
+window.addEventListener("orientationchange", ()=>setTimeout(setAppbarVar,200));
+
+/* ---------- 메신저 인앱 브라우저 감지 & 외부 브라우저 열기 ---------- */
+function isInAppBrowser(){
+  var ua=navigator.userAgent||"";
+  return /KAKAOTALK|NAVER\(inapp|Instagram|FBAN|FBAV|FB_IAB|Line\/|DaumApps|everytimeApp|band|wv\)/i.test(ua);
+}
+function isIOS(){ return /iPhone|iPad|iPod/i.test(navigator.userAgent||""); }
+function copyAppUrl(){
+  var url=location.href;
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(url).then(()=>toast("주소를 복사했어요. Safari·Chrome 주소창에 붙여넣어 열어주세요.")).catch(()=>toast("주소: "+url));
+  }else{ toast("주소: "+url); }
+}
+function openExternalBrowser(){
+  var ua=navigator.userAgent||"", url=location.href;
+  if(/KAKAOTALK/i.test(ua)){ location.href="kakaotalk://web/openExternal?url="+encodeURIComponent(url); return; }
+  if(/Android/i.test(ua) && !isIOS()){
+    location.href="intent://"+url.replace(/^https?:\/\//,"")+"#Intent;scheme=https;package=com.android.chrome;end";
+    setTimeout(copyAppUrl, 1200); // 인텐트 실패 대비 폴백
+    return;
+  }
+  copyAppUrl(); // iOS·기타: 주소 복사 안내
+}
+function checkInAppBrowser(){
+  if(!isInAppBrowser()) return;
+  var w=$("inappWarn"); if(w) w.style.display="block";
+  if(isIOS()){ var ios=$("inappWarnIos"); if(ios) ios.style.display="block"; }
+}
+
+/* ---------- 시작 ---------- */
+initHome();
+showScreen("home",false);
+checkInAppBrowser();
+setAppbarVar();
+setTimeout(setAppbarVar, 300); // 폰트 로드 후 재보정
+</script>
+</body>
+</html>
