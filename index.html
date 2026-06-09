@@ -74,12 +74,17 @@
   .icon{display:inline-flex; width:20px; height:20px; align-items:center; justify-content:center; color:currentColor; flex:0 0 auto;}
   .icon svg{display:block; width:100%; height:100%; stroke:currentColor; fill:none; stroke-width:2; stroke-linecap:round; stroke-linejoin:round;}
   .intake-card{margin-top:0; position:relative; z-index:1;}
-  .hero{margin:0 0 14px; padding:22px 18px; border-radius:var(--radius); text-align:center; color:var(--on-brand);
-    background:linear-gradient(135deg,#ffd84a 0%,var(--brand) 78%); box-shadow:var(--shadow-sm); position:relative; overflow:hidden;}
-  .hero:after{content:""; position:absolute; right:-34px; bottom:-50px; width:150px; height:150px;
-    background:url("assets/kimchiok-mark.png") center/contain no-repeat; opacity:.10; pointer-events:none;}
-  .hero-slogan{font-size:26px; font-weight:950; letter-spacing:-.5px; line-height:1.22; position:relative;}
-  .hero-sub{font-size:12.5px; font-weight:800; margin-top:8px; opacity:.7; position:relative;}
+  /* 풀폭(edge-to-edge) 히어로 — 화면 좌우/상단 패딩을 음수 마진으로 상쇄 */
+  .hero{margin:-16px -16px 18px; padding:30px 20px 34px; text-align:center; color:var(--on-brand);
+    background:radial-gradient(circle at 80% 38%, rgba(255,255,255,.32), transparent 48%), linear-gradient(135deg,#ffdc54 0%,var(--brand) 62%,#e7a800 100%);
+    position:relative; overflow:hidden; box-shadow:0 12px 22px rgba(176,128,0,.22);}
+  .hero:before{content:""; position:absolute; left:-40px; top:50%; transform:translateY(-50%); width:230px; height:230px;
+    background:url("assets/kimchiok-mark.png") center/contain no-repeat; opacity:.12; pointer-events:none;}
+  .hero-label{font-size:13px; font-weight:800; letter-spacing:3px; opacity:.72; position:relative;}
+  .hero-slogan{font-size:clamp(28px,8.6vw,38px); font-weight:950; letter-spacing:-.5px; line-height:1.16; margin-top:8px; position:relative;}
+  .hero-sub{font-size:clamp(13px,3.7vw,15px); font-weight:700; margin-top:12px; opacity:.78; position:relative;}
+  @media (max-width:560px){ .hero{margin-top:-12px;} }
+  @media (max-width:380px){ .hero{margin-left:-12px; margin-right:-12px;} }
   label.field{display:block; margin-bottom:11px;}
   label.field:last-child{margin-bottom:0;}
   .field > span{display:block; font-size:12px; color:var(--sub); margin-bottom:6px; font-weight:800;}
@@ -294,8 +299,9 @@
   <!-- HOME -->
   <section class="screen active" id="screen-home">
     <div class="hero">
+      <div class="hero-label">김치옥 서비스 MOT</div>
       <div class="hero-slogan">고객을 기분 좋게</div>
-      <div class="hero-sub">김치옥 서비스 MOT 점검</div>
+      <div class="hero-sub">매 순간의 진심이 단골을 만듭니다</div>
     </div>
     <div class="inapp-warn" id="inappWarn" style="display:none;">
       <span class="ttl">⚠️ 메신저 안에서 열렸어요</span>
@@ -544,7 +550,7 @@ const DEFAULT_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwc2LY-9Cx1U
 const APP_VERSION = "1.2.0";
 const CHANGELOG = [
   {v:"1.2.0", date:"2026-06-09", items:[
-    "첫 화면에 핵심 슬로건 '고객을 기분 좋게' 배너 추가",
+    "첫 화면에 핵심 슬로건 배너 추가 — '고객을 기분 좋게' / '매 순간의 진심이 단골을 만듭니다' (가로 풀폭 반응형 히어로)",
   ]},
   {v:"1.1.1", date:"2026-06-09", items:[
     "버그 수정 — 1회차 전송 완료 후 다음 점검 결과 화면에서 '구글 시트로 결과 전송' 버튼이 비활성화되던 문제 해결 (결과 화면 진입 시 전송 버튼 상태 초기화)",
