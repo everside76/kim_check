@@ -531,8 +531,11 @@ const LS = { hist:"kim_mot_history_v1", set:"kim_mot_settings_v1", draft:"kim_mo
 const DEFAULT_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwc2LY-9Cx1UsRXg5sZ8nwfo6wnXcTIQX0-6eenoTff7SL9FZFT8ENCwryOmseK6VWgZQ/exec";
 
 /* ---------- 앱 버전 & 변경 이력 (최신이 위) ---------- */
-const APP_VERSION = "1.1.0";
+const APP_VERSION = "1.1.1";
 const CHANGELOG = [
+  {v:"1.1.1", date:"2026-06-09", items:[
+    "버그 수정 — 1회차 전송 완료 후 다음 점검 결과 화면에서 '구글 시트로 결과 전송' 버튼이 비활성화되던 문제 해결 (결과 화면 진입 시 전송 버튼 상태 초기화)",
+  ]},
   {v:"1.1.0", date:"2026-06-05", items:[
     "체크리스트 v3 반영 — 문항별 가중 배점 재조정 (불이행 기준 ↑: 3·16·17번 / ↓: 7-1·8-2·13·14·19·20·21·22번)",
   ]},
@@ -794,6 +797,10 @@ function compute(){
 function buildResult(){
   const r=compute();
   session.comment=$("r-comment").value;
+  // 전송 버튼 상태 초기화 (이전 점검의 '전송 완료' 비활성화 상태가 남지 않도록)
+  const sb=$("sendBtn");
+  if(session.sent){ sb.disabled=true; sb.textContent="✅ 전송 완료"; $("sendHint").textContent="이미 전송된 점검이에요."; }
+  else{ sb.disabled=false; sb.innerHTML=`${icon('i-send')}구글 시트로 결과 전송`; $("sendHint").textContent=""; }
   $("r-score").innerHTML=`${r.score}<small> / 100</small>`;
   const g=$("r-grade"); g.textContent="등급 "+r.grade; g.className="grade grade-"+r.grade;
   $("r-ok").textContent=r.ok; $("r-tri").textContent=r.tri; $("r-x").textContent=r.x; $("r-rule").textContent=r.ruleViolations.length;
