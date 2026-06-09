@@ -74,6 +74,12 @@
   .icon{display:inline-flex; width:20px; height:20px; align-items:center; justify-content:center; color:currentColor; flex:0 0 auto;}
   .icon svg{display:block; width:100%; height:100%; stroke:currentColor; fill:none; stroke-width:2; stroke-linecap:round; stroke-linejoin:round;}
   .intake-card{margin-top:0; position:relative; z-index:1;}
+  .hero{margin:0 0 14px; padding:22px 18px; border-radius:var(--radius); text-align:center; color:var(--on-brand);
+    background:linear-gradient(135deg,#ffd84a 0%,var(--brand) 78%); box-shadow:var(--shadow-sm); position:relative; overflow:hidden;}
+  .hero:after{content:""; position:absolute; right:-34px; bottom:-50px; width:150px; height:150px;
+    background:url("assets/kimchiok-mark.png") center/contain no-repeat; opacity:.10; pointer-events:none;}
+  .hero-slogan{font-size:26px; font-weight:950; letter-spacing:-.5px; line-height:1.22; position:relative;}
+  .hero-sub{font-size:12.5px; font-weight:800; margin-top:8px; opacity:.7; position:relative;}
   label.field{display:block; margin-bottom:11px;}
   label.field:last-child{margin-bottom:0;}
   .field > span{display:block; font-size:12px; color:var(--sub); margin-bottom:6px; font-weight:800;}
@@ -287,6 +293,10 @@
 
   <!-- HOME -->
   <section class="screen active" id="screen-home">
+    <div class="hero">
+      <div class="hero-slogan">고객을 기분 좋게</div>
+      <div class="hero-sub">김치옥 서비스 MOT 점검</div>
+    </div>
     <div class="inapp-warn" id="inappWarn" style="display:none;">
       <span class="ttl">⚠️ 메신저 안에서 열렸어요</span>
       카카오톡 등 메신저 인앱 브라우저에서는 <b>홈 화면 추가가 안 되고, 앱이 제대로 동작하지 않을 수 있어요.</b> 아래 버튼으로 <b>기본 브라우저(Chrome·Safari)</b>에서 열어주세요.
@@ -531,8 +541,11 @@ const LS = { hist:"kim_mot_history_v1", set:"kim_mot_settings_v1", draft:"kim_mo
 const DEFAULT_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwc2LY-9Cx1UsRXg5sZ8nwfo6wnXcTIQX0-6eenoTff7SL9FZFT8ENCwryOmseK6VWgZQ/exec";
 
 /* ---------- 앱 버전 & 변경 이력 (최신이 위) ---------- */
-const APP_VERSION = "1.1.1";
+const APP_VERSION = "1.2.0";
 const CHANGELOG = [
+  {v:"1.2.0", date:"2026-06-09", items:[
+    "첫 화면에 핵심 슬로건 '고객을 기분 좋게' 배너 추가",
+  ]},
   {v:"1.1.1", date:"2026-06-09", items:[
     "버그 수정 — 1회차 전송 완료 후 다음 점검 결과 화면에서 '구글 시트로 결과 전송' 버튼이 비활성화되던 문제 해결 (결과 화면 진입 시 전송 버튼 상태 초기화)",
   ]},
