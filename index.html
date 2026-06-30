@@ -373,10 +373,16 @@
 
   <!-- RESULT -->
   <section class="screen" id="screen-result">
+    <div class="card" id="stageSelectCard">
+      <h2 class="card-title"><span class="icon"><svg><use href="#i-list"></use></svg></span>서비스한 단계 선택</h2>
+      <p class="hint" style="margin-top:0;">피점검자가 <b>실제로 서비스한 단계만</b> 선택하세요. 선택한 단계들만으로 <b>100점 만점 환산</b>됩니다.</p>
+      <div class="chips" id="stageSelectChips" style="margin-top:10px;"></div>
+    </div>
     <div class="card score-card">
       <div class="score-num" id="r-score">0<small> / 100</small></div>
       <div class="grade" id="r-grade">-</div>
       <p class="hint" id="r-bonus" style="margin:8px 0 0; color:var(--gold); font-weight:700; display:none;"></p>
+      <p class="hint" id="r-norminfo" style="margin:8px 0 0; display:none;"></p>
       <div class="stat-row">
         <div class="stat"><b id="r-ok" style="color:var(--ok)">0</b><span>○ 이행</span></div>
         <div class="stat"><b id="r-tri" style="color:var(--warn)">0</b><span>△ 미흡</span></div>
@@ -439,7 +445,8 @@
     <div class="card">
       <h2>점검 안내</h2>
       <div class="hint">평가: ○ 이행=감점 0 / △ 미흡=배점의 절반 / × 불이행=배점 (문항별 가중 배점) · <b>100점 만점 환산</b><br>
-        🚫 절대 금지 10계명 위반: 1건당 −5점<br>
+        📊 결과 화면에서 <b>피점검자가 서비스한 단계만 선택</b>하면 해당 단계들만으로 100점 만점 환산<br>
+        🚫 절대 금지 10계명 위반: 1건당 −5점 (환산 후 차감)<br>
         등급: S(90%↑) / A(80~89%) / B(70~79%) / C(70% 미만)</div>
     </div>
     <div class="card">
@@ -547,8 +554,13 @@ const LS = { hist:"kim_mot_history_v1", set:"kim_mot_settings_v1", draft:"kim_mo
 const DEFAULT_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwc2LY-9Cx1UsRXg5sZ8nwfo6wnXcTIQX0-6eenoTff7SL9FZFT8ENCwryOmseK6VWgZQ/exec";
 
 /* ---------- 앱 버전 & 변경 이력 (최신이 위) ---------- */
-const APP_VERSION = "1.2.0";
+const APP_VERSION = "1.3.0";
 const CHANGELOG = [
+  {v:"1.3.0", date:"2026-06-30", items:[
+    "결과 화면에 '서비스한 단계 선택' 추가 — 피점검자가 실제로 서비스한 단계만 선택하면 해당 단계들만으로 100점 만점 환산",
+    "환산점수 = (선택 단계 원점수 ÷ 선택 단계 만점) × 100, 10계명 위반은 환산 후 1건당 −5점 적용",
+    "구글 시트·CSV·이력에 서비스단계·제외단계·원점수·만점 기록 추가",
+  ]},
   {v:"1.2.0", date:"2026-06-09", items:[
     "첫 화면에 핵심 슬로건 배너 추가 — '고객을 기분 좋게' / '매 순간의 진심이 단골을 만듭니다' (가로 풀폭 반응형 히어로)",
   ]},
@@ -677,6 +689,15 @@ function resumeDraft(){ session=loadDraft(); if(!session)return; renderCheck(); 
 
 /* ---------- 점검 항목 렌더 ---------- */
 function visibleItems(){ return curBrand().items.filter(i=>i.order==="공통"||i.order===session.order); }
+function visibleStages(){ const items=visibleItems(); return curBrand().stages.filter(st=>items.some(i=>i.stage===st)); }
+function selectedStages(){
+  if(!session) return [];
+  const vis=visibleStages();
+  if(!Array.isArray(session.selectedStages)) session.selectedStages=vis.slice();   // 기본값: 전체 단계 선택
+  session.selectedStages=session.selectedStages.filter(st=>vis.includes(st));        // 보이지 않는 단계 정리
+  if(!session.selectedStages.length) session.selectedStages=vis.slice();
+  return session.selectedStages;
+}
 function renderCheck(){
   $("progStore").textContent=session.brand+" · "+session.store;
   const items=visibleItems();
@@ -791,13 +812,15 @@ function setRuleAction(no,v){ if(!session.rules[no]) session.rules[no]={}; sessi
 function itemMax(it){ return (it && it.px) ? it.px : 2; }          // 불이행 시 차감(=문항 배점)
 function penaltyOf(it, v){ const m=itemMax(it); return v==="X"?m : v==="T"?m/2 : 0; }
 function compute(){
-  const items=visibleItems();
+  const allStages=visibleStages();
+  const sel=selectedStages();
+  const items=visibleItems().filter(i=>sel.includes(i.stage));   // 선택한 단계 문항만 채점
   let ok=0,tri=0,x=0,deduct=0,maxDeduct=0,unanswered=0,bonus=0;
   const stageMap={};
   items.forEach(i=>{
     const a=session.answers[i.no]||{};
     const v=a.value;
-    maxDeduct+=itemMax(i);
+    maxDeduct+=itemMax(i);                                        // 선택 단계 만점(차감 가능 총점)
     if(i.bonus && a.bonusOn) bonus+=i.bonus;
     if(!v){unanswered++; return;}
     if(v==="O")ok++; else if(v==="T")tri++; else if(v==="X")x++;
@@ -806,16 +829,40 @@ function compute(){
   });
   const ruleViolations=RULES.filter(r=>(session.rules[r.no]||{}).occurred);
   const ruleDeduct=ruleViolations.length*RULE_PENALTY;
-  const base = maxDeduct>0 ? (1-deduct/maxDeduct)*100 : 100;   // 문항별 가중 배점 → 100점 만점 환산
-  const score=Math.max(0, Math.min(100, Math.round(base-ruleDeduct+bonus)));
+  const rawScore=maxDeduct-deduct;                                // 선택 단계 원점수
+  const normScore=maxDeduct>0 ? Math.round(rawScore/maxDeduct*100) : 0;   // 100점 만점 환산
+  const score=Math.max(0, Math.min(100, normScore-ruleDeduct+bonus));     // 10계명은 환산 후 절대 차감
   const grade=score>=90?"S":score>=80?"A":score>=70?"B":"C";
-  return {items,ok,tri,x,deduct,maxDeduct,unanswered,bonus,ruleViolations,ruleDeduct,score,grade,stageMap};
+  const excludedStages=allStages.filter(st=>!sel.includes(st));
+  return {items,ok,tri,x,deduct,maxDeduct,unanswered,bonus,ruleViolations,ruleDeduct,score,grade,stageMap,
+          rawScore,normScore,selectedStages:sel.slice(),allStages,excludedStages};
 }
 
 /* ---------- 결과 화면 ---------- */
+function renderStageSelect(r){
+  const vis=visibleStages();
+  $("stageSelectChips").innerHTML=vis.map(st=>{
+    const on=r.selectedStages.includes(st);
+    const cnt=visibleItems().filter(i=>i.stage===st).length;
+    return `<div class="chip ${on?'on':''}" onclick="toggleServiceStage('${esc(st)}')">${esc(st)} <span style="opacity:.65;font-weight:600;">(${cnt})</span></div>`;
+  }).join("");
+}
+function toggleServiceStage(st){
+  if(!session) return;
+  selectedStages();
+  const i=session.selectedStages.indexOf(st);
+  if(i>=0){
+    if(session.selectedStages.length<=1){ toast("최소 한 단계는 선택해야 해요"); return; }
+    session.selectedStages.splice(i,1);
+  }else{
+    session.selectedStages.push(st);
+  }
+  saveDraft(); buildResult();
+}
 function buildResult(){
   const r=compute();
   session.comment=$("r-comment").value;
+  renderStageSelect(r);
   // 전송 버튼 상태 초기화 (이전 점검의 '전송 완료' 비활성화 상태가 남지 않도록)
   const sb=$("sendBtn");
   if(session.sent){ sb.disabled=true; sb.textContent="✅ 전송 완료"; $("sendHint").textContent="이미 전송된 점검이에요."; }
@@ -825,6 +872,16 @@ function buildResult(){
   $("r-ok").textContent=r.ok; $("r-tri").textContent=r.tri; $("r-x").textContent=r.x; $("r-rule").textContent=r.ruleViolations.length;
   const b=$("r-bonus");
   if(r.bonus>0){ b.style.display="block"; b.textContent=`★ 가산점 +${r.bonus}점 반영됨`; } else { b.style.display="none"; }
+  const ni=$("r-norminfo");
+  if(ni){
+    ni.style.display="block";
+    const head = r.excludedStages.length
+      ? `선택한 <b>${r.selectedStages.length}</b>개 단계 기준 환산`
+      : `전체 <b>${r.allStages.length}</b>개 단계 기준`;
+    let html=`${head} · 원점수 <b>${r.rawScore}</b>/${r.maxDeduct}점`;
+    if(r.excludedStages.length) html+=`<br><span style="color:var(--sub);">제외: ${esc(r.excludedStages.join(", "))}</span>`;
+    ni.innerHTML=html;
+  }
   $("r-unanswered").innerHTML = r.unanswered
     ? `⚠️ 미응답 <b>${r.unanswered}</b>건은 감점에 포함되지 않았어요.`
     : `✅ 모든 항목에 응답했어요.`;
@@ -860,7 +917,9 @@ function persistCurrent(sent){
   const r=compute();
   session.comment=$("r-comment")?$("r-comment").value:session.comment;
   session.result={score:r.score,grade:r.grade,ok:r.ok,tri:r.tri,x:r.x,bonus:r.bonus,
-    unanswered:r.unanswered,ruleViolations:r.ruleViolations.length,total:r.items.length};
+    unanswered:r.unanswered,ruleViolations:r.ruleViolations.length,total:r.items.length,
+    rawScore:r.rawScore,maxScore:r.maxDeduct,
+    servicedStages:r.selectedStages.join(","),excludedStages:r.excludedStages.join(",")};
   session.savedAt=todayStr();
   if(sent){session.sent=true; session.sentAt=new Date().toISOString();}
   const hist=getHistory();
@@ -887,6 +946,8 @@ function buildPayload(){
     date:session.date, weekday:session.weekday,
     inspectType:session.inspectType.join(","), order:session.order,
     score:r.score, grade:r.grade, bonus:r.bonus,
+    rawScore:r.rawScore, maxScore:r.maxDeduct,
+    servicedStages:r.selectedStages.join(","), excludedStages:r.excludedStages.join(","),
     ok:r.ok, tri:r.tri, x:r.x, unanswered:r.unanswered,
     ruleViolations:r.ruleViolations.length, total:r.items.length,
     comment:($("r-comment").value||"").trim(),
@@ -935,6 +996,7 @@ function renderHistory(){
         <span class="badge ${h.sent?'sent':'unsent'}">${h.sent?'전송됨':'미전송'}</span>
       </div>
       <div class="hist-meta">${esc(h.date)} (${esc(h.weekday)}) · ${h.target?'대상 '+esc(h.target)+' · ':''}점검 ${esc(h.inspector)} · ${esc(h.order)}</div>
+      ${rs.excludedStages?`<div class="hist-meta" style="margin-top:2px;">서비스 단계 ${esc((rs.servicedStages||'').split(',').filter(Boolean).length)}개 환산 · 제외: ${esc(rs.excludedStages)}</div>`:''}
       <div style="display:flex;align-items:center;gap:12px;margin-top:10px;">
         <span class="grade grade-${rs.grade||'C'}" style="margin:0;padding:4px 12px;font-size:14px;">${rs.score??'-'}점 · ${rs.grade||'-'}</span>
         <span class="hist-meta">△${rs.tri||0} ✕${rs.x||0} 위반 ${rs.ruleViolations||0}${rs.bonus?(' ★+'+rs.bonus):''}</span>
@@ -958,8 +1020,8 @@ function deleteHistory(id){ saveHistory(getHistory().filter(h=>h.id!==id)); rend
 function downloadCSV(){
   const r=compute();
   const lines=[];
-  lines.push(["브랜드","지점","피점검자","점검자","점검일","요일","점검구분","주문방식","총점","등급","가산점"].join(","));
-  lines.push([session.brand,session.store,session.target||"",session.inspector,session.date,session.weekday,session.inspectType.join("/"),session.order,r.score,r.grade,r.bonus].map(csv).join(","));
+  lines.push(["브랜드","지점","피점검자","점검자","점검일","요일","점검구분","주문방식","총점","등급","가산점","서비스단계","제외단계","원점수","만점"].join(","));
+  lines.push([session.brand,session.store,session.target||"",session.inspector,session.date,session.weekday,session.inspectType.join("/"),session.order,r.score,r.grade,r.bonus,r.selectedStages.join("/"),r.excludedStages.join("/"),r.rawScore,r.maxDeduct].map(csv).join(","));
   lines.push("");
   lines.push(["No","단계","구분","항목","응답","감점","비고"].join(","));
   r.items.forEach(i=>{
