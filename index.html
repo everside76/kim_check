@@ -145,6 +145,7 @@
   .item.answered{border-color:rgba(19,138,61,.24); box-shadow:0 0 0 1px rgba(19,138,61,.08),var(--shadow-sm);}
   .item.flag-T{border-color:rgba(196,106,0,.32);}
   .item.flag-X{border-color:rgba(211,34,34,.35);}
+  .item.flag-N{border-color:var(--line); opacity:.62;}
   .item-top{display:flex; gap:8px; align-items:flex-start; margin-bottom:12px;}
   .item-no{font-size:12px; font-weight:900; color:var(--on-brand); background:linear-gradient(180deg,#ffd23f,var(--brand)); border-radius:8px; padding:3px 7px; flex:0 0 auto; min-width:30px; text-align:center;}
   .tag{font-size:10px; font-weight:800; padding:3px 6px; border-radius:6px; flex:0 0 auto; letter-spacing:.3px;}
@@ -168,6 +169,8 @@
   .ans.sel-O .lbl,.ans.sel-T .lbl,.ans.sel-X .lbl{color:inherit;}
   .bonus-btn{margin-top:10px; width:100%; padding:10px; border:1px dashed var(--gold); border-radius:10px; background:var(--gold-bg); color:var(--gold); font-size:13px; font-weight:800; cursor:pointer; font-family:inherit;}
   .bonus-btn.on{background:var(--gold); color:#fff; border-style:solid;}
+  .na-btn{margin-top:8px; width:100%; padding:9px; border:1px dashed var(--line); border-radius:10px; background:#fff; color:var(--sub); font-size:12.5px; font-weight:800; cursor:pointer; font-family:inherit;}
+  .na-btn.on{background:var(--ink); color:var(--bg); border-style:solid; border-color:var(--ink);}
   .note-toggle{margin-top:10px; font-size:12.5px; color:var(--brand-ink); background:none; border:none; padding:4px 0; cursor:pointer; font-weight:700; display:inline-flex; align-items:center; gap:5px; font-family:inherit;}
   .note-toggle .icon{width:16px; height:16px;}
   .note-box{margin-top:8px; display:none;}
@@ -353,8 +356,8 @@
     </div>
     <div id="itemList"></div>
     <div class="check-summary" id="checkSummary"></div>
-    <button class="btn" onclick="showScreen('rules');"><span class="icon"><svg><use href="#i-shield"></use></svg></span>절대 금지 10계명 점검 →</button>
-    <p class="hint" style="text-align:center;">결과를 보려면 <b>10계명 점검</b>을 먼저 완료해야 해요.</p>
+    <button class="btn" id="toRulesBtn" onclick="goRules()"><span class="icon"><svg><use href="#i-shield"></use></svg></span>절대 금지 10계명 점검 →</button>
+    <p class="hint" style="text-align:center;">모든 항목에 응답(<b>○·△·✕·해당없음</b>)해야 10계명 점검으로 넘어갈 수 있어요. 발생하지 않은 서비스는 <b>해당없음</b>으로 표시하세요.</p>
   </section>
 
   <!-- RULES -->
@@ -377,10 +380,10 @@
 
   <!-- RESULT -->
   <section class="screen" id="screen-result">
-    <div class="card" id="stageSelectCard">
-      <h2 class="card-title"><span class="icon"><svg><use href="#i-list"></use></svg></span>서비스한 단계 선택</h2>
-      <p class="hint" style="margin-top:0;">피점검자가 <b>실제로 서비스한 단계만</b> 선택하세요. 선택한 단계들만으로 <b>100점 만점 환산</b>됩니다.</p>
-      <div class="chips" id="stageSelectChips" style="margin-top:10px;"></div>
+    <div class="card" id="naInfoCard">
+      <h2 class="card-title"><span class="icon"><svg><use href="#i-list"></use></svg></span>채점 기준 안내</h2>
+      <p class="hint" style="margin-top:0;"><b>해당없음</b>으로 표시한 항목은 채점에서 <b>제외</b>되고, 나머지 항목만으로 <b>100점 만점 환산</b>됩니다. 발생하지 않은 서비스는 <b>해당없음</b>으로 표시하세요. (모든 항목 응답 후에만 결과가 산출됩니다.)</p>
+      <div id="r-nainfo" class="hint" style="margin-top:8px;"></div>
     </div>
     <div class="card score-card">
       <div class="score-num" id="r-score">0<small> / 100</small></div>
@@ -449,7 +452,8 @@
     <div class="card">
       <h2>점검 안내</h2>
       <div class="hint">평가: ○ 이행=감점 0 / △ 미흡=배점의 절반 / × 불이행=배점 (문항별 가중 배점) · <b>100점 만점 환산</b><br>
-        📊 결과 화면에서 <b>피점검자가 서비스한 단계만 선택</b>하면 해당 단계들만으로 100점 만점 환산<br>
+        📊 <b>해당없음</b> 항목은 채점 제외, 나머지 항목만으로 100점 만점 환산<br>
+        ✅ 모든 항목 응답(○·△·✕·해당없음) 완료 후에만 10계명 점검·결과로 진행 (발생하지 않은 서비스는 해당없음)<br>
         🚫 절대 금지 10계명 위반: 1건당 −5점 (환산 후 차감)<br>
         등급: S(90%↑) / A(80~89%) / B(70~79%) / C(70% 미만)</div>
     </div>
@@ -558,8 +562,15 @@ const LS = { hist:"kim_mot_history_v1", set:"kim_mot_settings_v1", draft:"kim_mo
 const DEFAULT_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwc2LY-9Cx1UsRXg5sZ8nwfo6wnXcTIQX0-6eenoTff7SL9FZFT8ENCwryOmseK6VWgZQ/exec";
 
 /* ---------- 앱 버전 & 변경 이력 (최신이 위) ---------- */
-const APP_VERSION = "1.4.0";
+const APP_VERSION = "1.5.0";
 const CHANGELOG = [
+  {v:"1.5.0", date:"2026-07-01", items:[
+    "채점 방식 개편 — '서비스 단계 선택' 폐지, 항목별 '해당없음(N/A)' 응답 추가",
+    "해당없음 = 채점 제외(분모 제외), 나머지 항목만으로 100점 만점 환산",
+    "체크리스트 전 항목 응답(○·△·✕·해당없음) 완료해야 10계명 점검으로 진행 가능 (미응답 방지)",
+    "발생하지 않은 서비스는 해당없음으로 표시 — 미응답은 감점이 아닌 채점 제외",
+    "구글 시트·CSV·이력의 '서비스단계/제외단계' → '해당없음/제외단계(해당없음)'로 변경 (Apps Script 재배포 필요)",
+  ]},
   {v:"1.4.0", date:"2026-06-30", items:[
     "점검 순서 변경 — 체크리스트 → 절대 금지 10계명 → 결과 순으로 진행 (10계명 건너뛰기 차단)",
     "10계명 화면에서 '모두 확인했습니다' 체크 후에만 결과 보기 활성화",
@@ -698,14 +709,6 @@ function resumeDraft(){ session=loadDraft(); if(!session)return; renderCheck(); 
 /* ---------- 점검 항목 렌더 ---------- */
 function visibleItems(){ return curBrand().items.filter(i=>i.order==="공통"||i.order===session.order); }
 function visibleStages(){ const items=visibleItems(); return curBrand().stages.filter(st=>items.some(i=>i.stage===st)); }
-function selectedStages(){
-  if(!session) return [];
-  const vis=visibleStages();
-  if(!Array.isArray(session.selectedStages)) session.selectedStages=vis.slice();   // 기본값: 전체 단계 선택
-  session.selectedStages=session.selectedStages.filter(st=>vis.includes(st));        // 보이지 않는 단계 정리
-  if(!session.selectedStages.length) session.selectedStages=vis.slice();
-  return session.selectedStages;
-}
 function renderCheck(){
   $("progStore").textContent=session.brand+" · "+session.store;
   const items=visibleItems();
@@ -731,7 +734,7 @@ function itemCard(it){
   const star=esc(it.text).replace(/(★[^)]*\))/g,'<span class="star">$1</span>');
   const px=itemMax(it);
   const bonus = it.bonus ? `<button class="bonus-btn ${a.bonusOn?'on':''}" onclick="toggleBonus('${esc(it.no)}')">★ ${esc(it.bonusLabel||'가산')} 가산 +${it.bonus}${a.bonusOn?' (적용됨)':''}</button>` : "";
-  return `<div class="item ${sel?'answered':''} ${sel==='T'?'flag-T':''} ${sel==='X'?'flag-X':''}" id="item-${esc(it.no)}">
+  return `<div class="item ${sel?'answered':''} ${sel==='T'?'flag-T':''} ${sel==='X'?'flag-X':''} ${sel==='N'?'flag-N':''}" id="item-${esc(it.no)}">
     <div class="item-top">
       <span class="item-no">${esc(it.no)}</span>
       <span class="item-text">${star}</span>
@@ -742,6 +745,7 @@ function itemCard(it){
       <div class="ans ${sel==='T'?'sel-T':''}" onclick="setAnswer('${esc(it.no)}','T')"><span class="sym">△</span><span class="lbl">미흡 −${px/2}</span></div>
       <div class="ans ${sel==='X'?'sel-X':''}" onclick="setAnswer('${esc(it.no)}','X')"><span class="sym">✕</span><span class="lbl">불이행 −${px}</span></div>
     </div>
+    <button class="na-btn ${sel==='N'?'on':''}" onclick="setAnswer('${esc(it.no)}','N')">— 해당없음 (이번 방문에 발생하지 않은 서비스 · 채점 제외)${sel==='N'?' ✓':''}</button>
     ${bonus}
     <button class="note-toggle" onclick="toggleNote('${esc(it.no)}')">${icon('i-note')} 비고 ${a.note?'(작성됨)':''}</button>
     <div class="note-box ${noteOpen}" id="note-${esc(it.no)}">
@@ -779,6 +783,28 @@ function updateFooter(){
   const text = `응답 ${done}/${items.length}` + (ruleCount?` · 위반 ${ruleCount}건`:"") + (done<items.length?` · 미응답 ${items.length-done}건`:" · 전부 응답 완료");
   if($("checkSummary")) $("checkSummary").textContent=text;
   if($("ruleSummary")) $("ruleSummary").textContent=text;
+  const trb=$("toRulesBtn");
+  if(trb){
+    const left=items.length-done;
+    trb.disabled = left>0;
+    trb.innerHTML = left>0
+      ? `<span class="icon"><svg><use href="#i-shield"></use></svg></span>미응답 ${left}건 — 모두 응답해야 진행돼요`
+      : `<span class="icon"><svg><use href="#i-shield"></use></svg></span>절대 금지 10계명 점검 →`;
+  }
+}
+function firstUnansweredNo(){
+  const it=visibleItems().find(i=>!(session.answers[i.no]||{}).value);
+  return it?it.no:null;
+}
+function goRules(){
+  const items=visibleItems(); const done=answeredCount();
+  if(done<items.length){
+    const no=firstUnansweredNo();
+    toast(`미응답 ${items.length-done}건이 있어요. 모두 응답해 주세요.`);
+    if(no){ const el=$("item-"+no); if(el){ el.scrollIntoView({behavior:"smooth",block:"center"}); el.classList.add("flag-X"); setTimeout(()=>el.classList.remove("flag-X"),1200); } }
+    return;
+  }
+  showScreen('rules');
 }
 function refreshStageNav(){
   const items=visibleItems();
@@ -826,59 +852,42 @@ function setRuleAction(no,v){ if(!session.rules[no]) session.rules[no]={}; sessi
 
 /* ---------- 점수 계산 ---------- */
 function itemMax(it){ return (it && it.px) ? it.px : 2; }          // 불이행 시 차감(=문항 배점)
+// 응답별 감점: 이행=0 / 미흡=절반 / 불이행=만점 / 해당없음·미응답=채점 제외(감점 아님)
 function penaltyOf(it, v){ const m=itemMax(it); return v==="X"?m : v==="T"?m/2 : 0; }
 function compute(){
   const allStages=visibleStages();
-  const sel=selectedStages();
-  const items=visibleItems().filter(i=>sel.includes(i.stage));   // 선택한 단계 문항만 채점
-  let ok=0,tri=0,x=0,deduct=0,maxDeduct=0,unanswered=0,bonus=0;
+  const items=visibleItems();                                     // 전체 문항 채점(단계 선택 없음)
+  let ok=0,tri=0,x=0,na=0,deduct=0,maxDeduct=0,unanswered=0,bonus=0;
   const stageMap={};
   items.forEach(i=>{
     const a=session.answers[i.no]||{};
     const v=a.value;
-    maxDeduct+=itemMax(i);                                        // 선택 단계 만점(차감 가능 총점)
     if(i.bonus && a.bonusOn) bonus+=i.bonus;
-    if(!v){unanswered++; return;}
+    if(v==="N"){ na++; return; }                                  // 해당없음 → 채점 제외
+    if(!v){ unanswered++; return; }                               // 미응답 → 채점 제외(게이트로 방지, 감점 아님)
+    maxDeduct+=itemMax(i);                                        // 채점 대상 만점(차감 가능 총점)
     if(v==="O")ok++; else if(v==="T")tri++; else if(v==="X")x++;
     const p=penaltyOf(i, v); deduct+=p;
-    stageMap[i.stage]=(stageMap[i.stage]||0)+p;
+    if(p>0) stageMap[i.stage]=(stageMap[i.stage]||0)+p;
   });
   const ruleViolations=RULES.filter(r=>(session.rules[r.no]||{}).occurred);
   const ruleDeduct=ruleViolations.length*RULE_PENALTY;
-  const rawScore=maxDeduct-deduct;                                // 선택 단계 원점수
+  const rawScore=maxDeduct-deduct;                                // 채점 대상 원점수
   const normScore=maxDeduct>0 ? Math.round(rawScore/maxDeduct*100) : 0;   // 100점 만점 환산
   const score=Math.max(0, Math.min(100, normScore-ruleDeduct+bonus));     // 10계명은 환산 후 절대 차감
+  const naStages=allStages.filter(st=>{                           // 전 항목이 해당없음인 단계
+    const its=items.filter(i=>i.stage===st);
+    return its.length>0 && its.every(i=>(session.answers[i.no]||{}).value==="N");
+  });
   const grade=score>=90?"S":score>=80?"A":score>=70?"B":"C";
-  const excludedStages=allStages.filter(st=>!sel.includes(st));
-  return {items,ok,tri,x,deduct,maxDeduct,unanswered,bonus,ruleViolations,ruleDeduct,score,grade,stageMap,
-          rawScore,normScore,selectedStages:sel.slice(),allStages,excludedStages};
+  return {items,ok,tri,x,na,deduct,maxDeduct,unanswered,bonus,ruleViolations,ruleDeduct,score,grade,stageMap,
+          rawScore,normScore,allStages,naStages};
 }
 
 /* ---------- 결과 화면 ---------- */
-function renderStageSelect(r){
-  const vis=visibleStages();
-  $("stageSelectChips").innerHTML=vis.map(st=>{
-    const on=r.selectedStages.includes(st);
-    const cnt=visibleItems().filter(i=>i.stage===st).length;
-    return `<div class="chip ${on?'on':''}" onclick="toggleServiceStage('${esc(st)}')">${esc(st)} <span style="opacity:.65;font-weight:600;">(${cnt})</span></div>`;
-  }).join("");
-}
-function toggleServiceStage(st){
-  if(!session) return;
-  selectedStages();
-  const i=session.selectedStages.indexOf(st);
-  if(i>=0){
-    if(session.selectedStages.length<=1){ toast("최소 한 단계는 선택해야 해요"); return; }
-    session.selectedStages.splice(i,1);
-  }else{
-    session.selectedStages.push(st);
-  }
-  saveDraft(); buildResult();
-}
 function buildResult(){
   const r=compute();
   session.comment=$("r-comment").value;
-  renderStageSelect(r);
   // 전송 버튼 상태 초기화 (이전 점검의 '전송 완료' 비활성화 상태가 남지 않도록)
   const sb=$("sendBtn");
   if(session.sent){ sb.disabled=true; sb.textContent="✅ 전송 완료"; $("sendHint").textContent="이미 전송된 점검이에요."; }
@@ -888,20 +897,24 @@ function buildResult(){
   $("r-ok").textContent=r.ok; $("r-tri").textContent=r.tri; $("r-x").textContent=r.x; $("r-rule").textContent=r.ruleViolations.length;
   const b=$("r-bonus");
   if(r.bonus>0){ b.style.display="block"; b.textContent=`★ 가산점 +${r.bonus}점 반영됨`; } else { b.style.display="none"; }
+  const scored=r.items.length-r.na;
   const ni=$("r-norminfo");
   if(ni){
     ni.style.display="block";
-    const head = r.excludedStages.length
-      ? `선택한 <b>${r.selectedStages.length}</b>개 단계 기준 환산`
-      : `전체 <b>${r.allStages.length}</b>개 단계 기준`;
-    let html=`${head} · 원점수 <b>${r.rawScore}</b>/${r.maxDeduct}점`;
-    if(r.excludedStages.length) html+=`<br><span style="color:var(--sub);">제외: ${esc(r.excludedStages.join(", "))}</span>`;
-    ni.innerHTML=html;
+    ni.innerHTML=`채점 <b>${scored}</b>항목 기준 환산 · 원점수 <b>${r.rawScore}</b>/${r.maxDeduct}점`
+      + (r.na?`<br><span style="color:var(--sub);">해당없음 ${r.na}건 제외</span>`:``);
+  }
+  const nai=$("r-nainfo");
+  if(nai){
+    nai.innerHTML = r.naStages.length
+      ? `제외된 단계(전 항목 해당없음): <b>${esc(r.naStages.join(", "))}</b>`
+      : (r.na? `해당없음 <b>${r.na}</b>건이 채점에서 제외되었습니다.` : `해당없음으로 제외된 항목이 없습니다.`);
   }
   $("r-unanswered").innerHTML = r.unanswered
-    ? `⚠️ 미응답 <b>${r.unanswered}</b>건은 감점에 포함되지 않았어요.`
+    ? `⚠️ 미응답 <b>${r.unanswered}</b>건은 채점에서 제외됐어요. 정확한 점수를 위해 모든 항목에 응답해 주세요.`
     : `✅ 모든 항목에 응답했어요.`;
   $("r-stages").innerHTML=curBrand().stages.filter(st=>r.items.some(i=>i.stage===st)).map(st=>{
+    if(r.naStages.includes(st)) return `<div class="stage-score"><span>${esc(st)}</span><b class="zero" style="color:var(--sub);">제외(해당없음)</b></div>`;
     const d=r.stageMap[st]||0;
     return `<div class="stage-score"><span>${esc(st)}</span><b class="${d===0?'zero':''}">${d===0?'감점 없음':'−'+d+'점'}</b></div>`;
   }).join("");
@@ -932,10 +945,9 @@ function persistCurrent(sent){
   if(!session) return;
   const r=compute();
   session.comment=$("r-comment")?$("r-comment").value:session.comment;
-  session.result={score:r.score,grade:r.grade,ok:r.ok,tri:r.tri,x:r.x,bonus:r.bonus,
+  session.result={score:r.score,grade:r.grade,ok:r.ok,tri:r.tri,x:r.x,na:r.na,bonus:r.bonus,
     unanswered:r.unanswered,ruleViolations:r.ruleViolations.length,total:r.items.length,
-    rawScore:r.rawScore,maxScore:r.maxDeduct,
-    servicedStages:r.selectedStages.join(","),excludedStages:r.excludedStages.join(",")};
+    rawScore:r.rawScore,maxScore:r.maxDeduct,naStages:r.naStages.join(",")};
   session.savedAt=todayStr();
   if(sent){session.sent=true; session.sentAt=new Date().toISOString();}
   const hist=getHistory();
@@ -963,14 +975,14 @@ function buildPayload(){
     inspectType:session.inspectType.join(","), order:session.order,
     score:r.score, grade:r.grade, bonus:r.bonus,
     rawScore:r.rawScore, maxScore:r.maxDeduct,
-    servicedStages:r.selectedStages.join(","), excludedStages:r.excludedStages.join(","),
-    ok:r.ok, tri:r.tri, x:r.x, unanswered:r.unanswered,
+    naStages:r.naStages.join(","),
+    ok:r.ok, tri:r.tri, x:r.x, na:r.na, unanswered:r.unanswered,
     ruleViolations:r.ruleViolations.length, total:r.items.length,
     comment:($("r-comment").value||"").trim(),
     items:r.items.map(i=>{
       const a=session.answers[i.no]||{};
       return {no:i.no, stage:i.stage, type:i.type, text:i.text,
-        value:a.value||"", label:({O:"이행",T:"미흡",X:"불이행"})[a.value]||"미응답",
+        value:a.value||"", label:({O:"이행",T:"미흡",X:"불이행",N:"해당없음"})[a.value]||"미응답",
         penalty:penaltyOf(i, a.value), max:itemMax(i), bonus:(i.bonus&&a.bonusOn)?i.bonus:0, note:a.note||""};
     }),
     rules:r.ruleViolations.map(rl=>({no:rl.no,key:rl.key,desc:rl.desc,action:(session.rules[rl.no]||{}).action||""}))
@@ -1012,10 +1024,10 @@ function renderHistory(){
         <span class="badge ${h.sent?'sent':'unsent'}">${h.sent?'전송됨':'미전송'}</span>
       </div>
       <div class="hist-meta">${esc(h.date)} (${esc(h.weekday)}) · ${h.target?'대상 '+esc(h.target)+' · ':''}점검 ${esc(h.inspector)} · ${esc(h.order)}</div>
-      ${rs.excludedStages?`<div class="hist-meta" style="margin-top:2px;">서비스 단계 ${esc((rs.servicedStages||'').split(',').filter(Boolean).length)}개 환산 · 제외: ${esc(rs.excludedStages)}</div>`:''}
+      ${rs.naStages?`<div class="hist-meta" style="margin-top:2px;">제외 단계(해당없음): ${esc(rs.naStages)}</div>`:(rs.na?`<div class="hist-meta" style="margin-top:2px;">해당없음 ${esc(rs.na)}건 제외</div>`:'')}
       <div style="display:flex;align-items:center;gap:12px;margin-top:10px;">
         <span class="grade grade-${rs.grade||'C'}" style="margin:0;padding:4px 12px;font-size:14px;">${rs.score??'-'}점 · ${rs.grade||'-'}</span>
-        <span class="hist-meta">△${rs.tri||0} ✕${rs.x||0} 위반 ${rs.ruleViolations||0}${rs.bonus?(' ★+'+rs.bonus):''}</span>
+        <span class="hist-meta">△${rs.tri||0} ✕${rs.x||0}${rs.unanswered?(' ?'+rs.unanswered):''} 위반 ${rs.ruleViolations||0}${rs.bonus?(' ★+'+rs.bonus):''}</span>
       </div>
       <div class="btn-row" style="margin-top:12px;">
         ${h.sent?'':`<button class="btn ghost" style="padding:10px;font-size:14px;" onclick="resendHistory('${h.id}')">🔁 재전송</button>`}
@@ -1036,13 +1048,13 @@ function deleteHistory(id){ saveHistory(getHistory().filter(h=>h.id!==id)); rend
 function downloadCSV(){
   const r=compute();
   const lines=[];
-  lines.push(["브랜드","지점","피점검자","점검자","점검일","요일","점검구분","주문방식","총점","등급","가산점","서비스단계","제외단계","원점수","만점"].join(","));
-  lines.push([session.brand,session.store,session.target||"",session.inspector,session.date,session.weekday,session.inspectType.join("/"),session.order,r.score,r.grade,r.bonus,r.selectedStages.join("/"),r.excludedStages.join("/"),r.rawScore,r.maxDeduct].map(csv).join(","));
+  lines.push(["브랜드","지점","피점검자","점검자","점검일","요일","점검구분","주문방식","총점","등급","가산점","해당없음","미응답","제외단계","원점수","만점"].join(","));
+  lines.push([session.brand,session.store,session.target||"",session.inspector,session.date,session.weekday,session.inspectType.join("/"),session.order,r.score,r.grade,r.bonus,r.na,r.unanswered,r.naStages.join("/"),r.rawScore,r.maxDeduct].map(csv).join(","));
   lines.push("");
   lines.push(["No","단계","구분","항목","응답","감점","비고"].join(","));
   r.items.forEach(i=>{
     const a=session.answers[i.no]||{};
-    lines.push([i.no,i.stage,i.type,i.text,({O:"이행",T:"미흡",X:"불이행"})[a.value]||"미응답",penaltyOf(i,a.value),a.note||""].map(csv).join(","));
+    lines.push([i.no,i.stage,i.type,i.text,({O:"이행",T:"미흡",X:"불이행",N:"해당없음"})[a.value]||"미응답",penaltyOf(i,a.value),a.note||""].map(csv).join(","));
   });
   if(r.ruleViolations.length){
     lines.push(""); lines.push(["10계명 위반","키워드","내용","세부사항"].join(","));

@@ -24,7 +24,7 @@ var SHEET_DETAIL  = '항목상세';
 var HEAD_SUMMARY = [
   '전송일시','점검ID','브랜드','지점명','피점검자','점검자','점검일','요일','점검구분','주문방식',
   '총점','등급','가산점','이행(○)','미흡(△)','불이행(✕)','미응답','10계명위반','총항목수','종합코멘트',
-  '서비스단계','제외단계','원점수','만점'
+  '해당없음','제외단계(해당없음)','원점수','만점'
 ];
 // 상세 시트 헤더
 var HEAD_DETAIL = [
@@ -73,8 +73,8 @@ function doPost(e) {
       num_(data.ruleViolations),
       num_(data.total),
       data.comment || '',
-      data.servicedStages || '',
-      data.excludedStages || '',
+      num_(data.na),
+      data.naStages || '',
       num_(data.rawScore),
       num_(data.maxScore)
     ]);
