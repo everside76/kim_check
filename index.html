@@ -314,6 +314,12 @@
     </div>
     <div class="card intake-card">
       <h2 class="card-title"><span class="icon"><svg><use href="#i-store"></use></svg></span>김치옥 점검 정보</h2>
+      <label class="field"><span>브랜드(버전) <i class="req">*</i></span>
+        <div class="radio-row" id="f-version">
+          <div class="chip" data-v="무르익다">무르익다</div>
+          <div class="chip" data-v="익스프레스">익스프레스</div>
+        </div>
+        <div class="hint">점검하는 지점의 <b>브랜드 버전</b>을 먼저 선택하세요. 버전에 따라 체크 항목이 달라져요.</div></label>
       <label class="field"><span>지점명 <i class="req">*</i></span>
         <input type="text" id="f-store" placeholder="예) 강남점" autocomplete="off" />
         <div class="hint"><b>지점명만</b> 입력하세요. (예: 강남점, 역삼점)</div></label>
@@ -485,7 +491,8 @@
    ============================================================ */
 
 /* ---------- 김치옥 v3 — 40항목(7·8·9 주문방식 분기) · 전 항목 구분 S ---------- */
-const ITEMS_KIMCHIOK = [
+// 익스프레스 버전 (기준 문항)
+const ITEMS_EXP = [
   // 입점
   {no:"1", stage:"입점", type:"S", order:"공통", px:4, text:`고객 입장 즉시 '어서오세요!! 김치옥입니다.' 라고 큰 소리로 인사하는가?`, criteria:`큰 소리 기준: 선창·후창 2명 이상 시 이행으로 판단`},
   {no:"2", stage:"입점", type:"S", order:"공통", px:2, text:`인사 시 고객을 바라보며 눈을 맞추는가?`},
@@ -538,8 +545,23 @@ const ITEMS_KIMCHIOK = [
   {no:"40", stage:"클레임", type:"S", order:"공통", px:2, text:`클레임 해결 후 '새로 드린 음식은 괜찮으신가요?' 사후 확인을 하는가?`},
 ];
 
+// 무르익다 버전 — 익스프레스와 다른 문항만 override (15·18·19·20·21·23·24·29)
+const MUR_OVERRIDES = {
+  "15": {text:`뜨거운 음식 제공 시 '뜨거우니 조심하세요' 라고 안내하는가? (예: 제육볶음, 폭탄계란찜 등)`},
+  "18": {text:`타이머가 울리면 (찌개류) '실례합니다' 하고 약불로 조절하며 '맛있게 드세요!', (김치찜) 불 켠 뒤 '국물이 끓어오르면 김치와 고기를 잘라서 드세요!' 멘트를 하는가?`, criteria:``},
+  "19": {text:`맛있게 먹는 법에 대한 안내를 하는가?`, criteria:`김치찜 매뉴얼 참고 / 찌개: 사리 넣어 드시면 더 맛있어요`},
+  "20": {text:`(찌개·찜 공통) '육수 더 필요하시면 말씀해주세요' 멘트를 하는가?`, criteria:``},
+  "21": {text:`고기 제공 전, 반찬이 메뉴 기준에 맞게 세팅되었는가? ① 콩나물+고사리+익은지+파김치 ② 장아찌류+소스류+열무김치+겉절이 ③ 앞접시 ④ 껍데기 주문 시 콩가루`, criteria:``},
+  "23": {text:`고기별 굽는 순서를 안내하는가? (모둠 한판·대판 주문 시: 삼겹살 → 목살 → 가브리살 → 껍데기)`, criteria:``},
+  "24": {text:`고기/모둠(한판·대판)을 올려주고 21번 ①번 반찬을 올려주며, 다 쓴 그릇을 퇴식하는가?`, criteria:`① 콩나물+고사리+익은지+파김치`},
+  "29": {text:`(짜게티/셀프 볶음밥) 사이드 메뉴 제공 시 적절한 안내 멘트를 하는가?`, criteria:`짜게티: 불판에 공간이 있으면 올려서 고기와 함께 따뜻하게 드시도록 안내`},
+};
+const ITEMS_MUR = ITEMS_EXP.map(it => MUR_OVERRIDES[it.no] ? {...it, ...MUR_OVERRIDES[it.no]} : it);
+
+const KIM_STAGES = ["입점","주문","서빙","식사중","계산 및 환송","퇴식","클레임"];
 const BRANDS = {
-  "김치옥": { stages:["입점","주문","서빙","식사중","계산 및 환송","퇴식","클레임"], items:ITEMS_KIMCHIOK },
+  "김치옥 무르익다":   { stages:KIM_STAGES, items:ITEMS_MUR },
+  "김치옥 익스프레스": { stages:KIM_STAGES, items:ITEMS_EXP },
 };
 
 /* ---------- 절대 금지 10계명 (공통) ---------- */
@@ -562,8 +584,13 @@ const LS = { hist:"kim_mot_history_v1", set:"kim_mot_settings_v1", draft:"kim_mo
 const DEFAULT_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwc2LY-9Cx1UsRXg5sZ8nwfo6wnXcTIQX0-6eenoTff7SL9FZFT8ENCwryOmseK6VWgZQ/exec";
 
 /* ---------- 앱 버전 & 변경 이력 (최신이 위) ---------- */
-const APP_VERSION = "1.5.0";
+const APP_VERSION = "1.6.0";
 const CHANGELOG = [
+  {v:"1.6.0", date:"2026-07-01", items:[
+    "브랜드 버전 분리 — '무르익다'·'익스프레스' 체크리스트를 지점 정보 상단에서 선택",
+    "버전별 상이 문항 반영(15·18·19·20·21·23·24·29) — v4 체크리스트 기준",
+    "선택한 버전이 시트·CSV·이력의 '브랜드' 항목에 기록됨",
+  ]},
   {v:"1.5.0", date:"2026-07-01", items:[
     "채점 방식 개편 — '서비스 단계 선택' 폐지, 항목별 '해당없음(N/A)' 응답 추가",
     "해당없음 = 채점 제외(분모 제외), 나머지 항목만으로 100점 만점 환산",
@@ -615,7 +642,7 @@ function storageRemove(key){try{localStorage.removeItem(key);}catch(e){}}
 function getSettings(){try{return JSON.parse(storageGet(LS.set))||{};}catch(e){return {};}}
 function getHistory(){try{return JSON.parse(storageGet(LS.hist))||[];}catch(e){return [];}}
 function saveHistory(arr){storageSet(LS.hist,JSON.stringify(arr));}
-function curBrand(){return BRANDS[session && session.brand] || BRANDS["김치옥"];}
+function curBrand(){return BRANDS[session && session.brand] || BRANDS["김치옥 익스프레스"];}
 function icon(id){return `<span class="icon"><svg><use href="#${id}"></use></svg></span>`;}
 function getScriptUrl(){return (getSettings().scriptUrl||DEFAULT_SCRIPT_URL).trim();}
 
@@ -674,9 +701,9 @@ function initHome(){
   $("f-weekday").value=weekdayOf(todayStr());
   $("f-date").addEventListener("change",e=>$("f-weekday").value=weekdayOf(e.target.value));
   $("f-type").querySelectorAll(".chip").forEach(c=>c.addEventListener("click",()=>c.classList.toggle("on")));
-  $("f-order").querySelectorAll(".chip").forEach(c=>c.addEventListener("click",()=>{
-    $("f-order").querySelectorAll(".chip").forEach(x=>x.classList.remove("on")); c.classList.add("on");
-  }));
+  ["f-version","f-order"].forEach(id=>$(id).querySelectorAll(".chip").forEach(c=>c.addEventListener("click",()=>{
+    $(id).querySelectorAll(".chip").forEach(x=>x.classList.remove("on")); c.classList.add("on");
+  })));
   const draft=loadDraft();
   if(draft){
     $("resumeHint").style.display="block";
@@ -689,12 +716,14 @@ function startInspection(){
   const store=$("f-store").value.trim();
   const target=$("f-target").value.trim();
   const inspector=$("f-inspector").value.trim();
+  const version=($("f-version").querySelector(".chip.on")||{}).dataset?.v;
   const order=($("f-order").querySelector(".chip.on")||{}).dataset?.v;
+  if(!version){toast("브랜드(버전)를 선택해 주세요");return;}
   if(!store){toast("지점명을 입력해 주세요");$("f-store").focus();return;}
   if(!inspector){toast("점검자를 입력해 주세요");$("f-inspector").focus();return;}
   if(!order){toast("주문 방식을 선택해 주세요");return;}
   const types=[...$("f-type").querySelectorAll(".chip.on")].map(c=>c.dataset.v);
-  session={ id:uid(), brand:"김치옥", store, target, inspector,
+  session={ id:uid(), brand:"김치옥 "+version, store, target, inspector,
     date:$("f-date").value, weekday:$("f-weekday").value,
     inspectType:types, order, answers:{}, rules:{}, comment:"", sent:false, sentAt:null };
   saveDraft(); renderCheck(); showScreen("check");
@@ -959,6 +988,7 @@ function persistCurrent(sent){
 function resetHomeForm(){
   $("f-store").value=""; $("f-target").value=""; $("f-inspector").value="";
   $("f-date").value=todayStr(); $("f-weekday").value=weekdayOf(todayStr());
+  $("f-version").querySelectorAll(".chip.on").forEach(c=>c.classList.remove("on"));
   $("f-type").querySelectorAll(".chip.on").forEach(c=>c.classList.remove("on"));
   $("f-order").querySelectorAll(".chip.on").forEach(c=>c.classList.remove("on"));
   $("resumeHint").style.display="none";
