@@ -308,7 +308,7 @@
     </div>
     <div class="inapp-warn" id="inappWarn" style="display:none;">
       <span class="ttl">⚠️ 메신저 안에서 열렸어요</span>
-      카카오톡 등 메신저 인앱 브라우저에서는 <b>홈 화면 추가가 안 되고, 앱이 제대로 동작하지 않을 수 있어요.</b> 아래 버튼으로 <b>기본 브라우저(Chrome·Safari)</b>에서 열어주세요.
+      카카오톡 등 메신저 인앱 브라우저에서는 <b>앱 설치가 안 되고, 앱이 제대로 동작하지 않을 수 있어요.</b> 아래 버튼으로 <b>기본 브라우저(Chrome·Safari)</b>에서 열어주세요.
       <button class="btn" onclick="openExternalBrowser()">기본 브라우저로 열기</button>
       <div class="inapp-warn-ios" id="inappWarnIos" style="display:none;">아이폰은 화면 <b>오른쪽 아래(또는 위) 메뉴 → 'Safari로 열기'</b>를 눌러도 돼요.</div>
     </div>
@@ -441,16 +441,20 @@
   <!-- SETTINGS -->
   <section class="screen" id="screen-settings">
     <div class="card">
-      <h2 class="card-title"><span class="icon"><svg><use href="#i-home"></use></svg></span>홈 화면 바로가기</h2>
-      <p class="hint" style="margin-top:0;">직원 휴대폰 홈 화면에 앱 아이콘을 추가하면 일반 앱처럼 바로 실행할 수 있습니다.</p>
+      <h2 class="card-title"><span class="icon"><svg><use href="#i-home"></use></svg></span>스마트폰·PC에 설치</h2>
+      <p class="hint" style="margin-top:0;">이 점검 앱을 <b>스마트폰이나 PC에 설치</b>하면 일반 앱처럼 아이콘으로 바로 실행할 수 있습니다.</p>
       <div class="btn-row" style="margin-top:12px;">
-        <button class="btn" id="installBtn" onclick="installShortcut()"><span class="icon"><svg><use href="#i-home"></use></svg></span>바로가기 만들기</button>
+        <button class="btn" id="installBtn" onclick="installShortcut()"><span class="icon"><svg><use href="#i-home"></use></svg></span>설치하기</button>
+      </div>
+      <div class="hint" style="margin-top:12px; background:var(--ok-bg); border:1px solid var(--ok); border-radius:10px; padding:12px; color:var(--ink);">
+        🔒 <b>안심하고 설치하세요.</b> 이 앱은 별도의 프로그램을 내려받는 것이 아니라, <b>웹페이지를 아이콘처럼 등록</b>하는 방식입니다. 스마트폰·PC에 접근하거나 개인정보를 수집하지 않으며, 점검 기록은 <b>이 기기와 회사 구글 시트에만</b> 저장됩니다. 언제든 아이콘을 삭제하면 완전히 제거됩니다.
       </div>
       <div class="hint shortcut-guide" id="shortcutGuide" style="margin-top:12px;">
-        ⚠️ <b>카카오톡·메신저로 받은 링크</b>는 먼저 <b>Chrome / Safari로 열기</b> 후 진행하세요. (메신저 인앱 브라우저는 홈 화면 추가가 제한됩니다)<br>
+        ⚠️ <b>카카오톡·메신저로 받은 링크</b>는 먼저 <b>Chrome / Safari로 열기</b> 후 진행하세요. (메신저 인앱 브라우저는 설치가 제한됩니다)<br>
         <b>iPhone Safari</b>: 공유 버튼 → 홈 화면에 추가<br>
-        <b>Android Chrome</b>: 오른쪽 위 메뉴 → 앱 설치 또는 홈 화면에 추가<br>
-        브라우저가 자동 설치를 지원하면 위의 바로가기 만들기 버튼으로 바로 추가할 수 있습니다.
+        <b>Android Chrome</b>: 오른쪽 위 메뉴 → 앱 설치<br>
+        <b>PC Chrome·Edge</b>: 주소창 오른쪽 <b>설치 아이콘</b>(⊕) 클릭<br>
+        브라우저가 자동 설치를 지원하면 위의 설치하기 버튼으로 바로 설치할 수 있습니다.
       </div>
     </div>
     <div class="card">
@@ -589,8 +593,12 @@ const LS = { hist:"kim_mot_history_v1", set:"kim_mot_settings_v1", draft:"kim_mo
 const DEFAULT_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwc2LY-9Cx1UsRXg5sZ8nwfo6wnXcTIQX0-6eenoTff7SL9FZFT8ENCwryOmseK6VWgZQ/exec";
 
 /* ---------- 앱 버전 & 변경 이력 (최신이 위) ---------- */
-const APP_VERSION = "1.10.0";
+const APP_VERSION = "1.11.0";
 const CHANGELOG = [
+  {v:"1.11.0", date:"2026-07-02", items:[
+    "설치 안내 문구를 '홈 화면 바로가기' → '스마트폰·PC에 설치'로 변경 (PC Chrome·Edge 설치 안내 추가)",
+    "설치 시 보안 안심 메시지 추가 — 별도 프로그램이 아닌 웹앱 등록 방식, 개인정보 미수집 안내",
+  ]},
   {v:"1.10.0", date:"2026-07-02", items:[
     "온라인 점검이력에 매장명 검색 기능 추가",
     "온라인 점검이력 정렬 필터 추가 — 최신순·오래된순·매장명순",
@@ -706,18 +714,18 @@ async function installShortcut(){
     try{
       await deferredInstallPrompt.prompt();
       const choice=await deferredInstallPrompt.userChoice;
-      toast(choice && choice.outcome==="accepted" ? "홈 화면에 추가했어요" : "추가가 취소됐어요");
+      toast(choice && choice.outcome==="accepted" ? "앱을 설치했어요" : "설치가 취소됐어요");
     }catch(e){
       const guide=$("shortcutGuide");
       if(guide) guide.classList.add("open");
-      toast("브라우저 메뉴에서 홈 화면에 추가해 주세요");
+      toast("브라우저 메뉴에서 앱을 설치해 주세요");
     }
     deferredInstallPrompt=null;
     return;
   }
   const guide=$("shortcutGuide");
   if(guide) guide.classList.add("open");
-  toast("브라우저 메뉴에서 홈 화면에 추가해 주세요");
+  toast("브라우저 메뉴에서 앱을 설치해 주세요");
 }
 
 /* ---------- 홈 ---------- */
