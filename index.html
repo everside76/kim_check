@@ -333,12 +333,6 @@
         <label class="field" style="flex:0 0 96px;"><span>요일</span>
           <input type="text" id="f-weekday" readonly /></label>
       </div>
-      <label class="field"><span>점검 구분</span>
-        <div class="chips" id="f-type">
-          <div class="chip" data-v="본사점검">본사점검</div>
-          <div class="chip" data-v="SV점검">SV점검</div>
-        </div>
-      </label>
       <label class="field" style="margin-bottom:0;"><span>주문 방식 <i class="req">*</i></span>
         <div class="radio-row" id="f-order">
           <div class="chip" data-v="직접주문">직접주문</div>
@@ -584,8 +578,14 @@ const LS = { hist:"kim_mot_history_v1", set:"kim_mot_settings_v1", draft:"kim_mo
 const DEFAULT_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwc2LY-9Cx1UsRXg5sZ8nwfo6wnXcTIQX0-6eenoTff7SL9FZFT8ENCwryOmseK6VWgZQ/exec";
 
 /* ---------- 앱 버전 & 변경 이력 (최신이 위) ---------- */
-const APP_VERSION = "1.7.0";
+const APP_VERSION = "1.8.0";
 const CHANGELOG = [
+  {v:"1.8.0", date:"2026-07-02", items:[
+    "단계별 감점에 '절대 금지 10계명' 행 추가 — 위반 건수와 감점 표시",
+    "10계명 감점이 100점 환산 후 추가 차감임을 계산식과 함께 안내 (환산 − 위반 = 최종)",
+    "점수 카드 원점수 표시 뒤에 10계명 위반 절대 감점(−N점) 표시 추가",
+    "점검 구분(본사점검·SV점검) 폐지 — 입력 화면·CSV에서 제거 (시트의 점검구분 칸은 빈 값)",
+  ]},
   {v:"1.7.0", date:"2026-07-02", items:[
     "점검 이력에서 항목을 누르면 저장된 점검 결과 화면을 다시 볼 수 있음 ('결과 보기' 버튼 추가)",
     "이력 열람 후 '처음으로'를 눌러도 작성 중이던 다른 점검의 임시저장이 유지되도록 보호",
@@ -704,7 +704,6 @@ function initHome(){
   $("f-date").value=todayStr();
   $("f-weekday").value=weekdayOf(todayStr());
   $("f-date").addEventListener("change",e=>$("f-weekday").value=weekdayOf(e.target.value));
-  $("f-type").querySelectorAll(".chip").forEach(c=>c.addEventListener("click",()=>c.classList.toggle("on")));
   ["f-version","f-order"].forEach(id=>$(id).querySelectorAll(".chip").forEach(c=>c.addEventListener("click",()=>{
     $(id).querySelectorAll(".chip").forEach(x=>x.classList.remove("on")); c.classList.add("on");
   })));
@@ -726,10 +725,9 @@ function startInspection(){
   if(!store){toast("지점명을 입력해 주세요");$("f-store").focus();return;}
   if(!inspector){toast("점검자를 입력해 주세요");$("f-inspector").focus();return;}
   if(!order){toast("주문 방식을 선택해 주세요");return;}
-  const types=[...$("f-type").querySelectorAll(".chip.on")].map(c=>c.dataset.v);
   session={ id:uid(), brand:"김치옥 "+version, store, target, inspector,
     date:$("f-date").value, weekday:$("f-weekday").value,
-    inspectType:types, order, answers:{}, rules:{}, comment:"", sent:false, sentAt:null };
+    order, answers:{}, rules:{}, comment:"", sent:false, sentAt:null };
   saveDraft(); renderCheck(); showScreen("check");
 }
 
@@ -935,6 +933,7 @@ function buildResult(){
   if(ni){
     ni.style.display="block";
     ni.innerHTML=`채점 <b>${scored}</b>항목 기준 환산 · 원점수 <b>${r.rawScore}</b>/${r.maxDeduct}점`
+      + (r.ruleDeduct>0?` · <span style="color:var(--bad);">🚫 10계명 위반 <b>−${r.ruleDeduct}점</b>(환산 후 차감)</span>`:``)
       + (r.na?`<br><span style="color:var(--sub);">해당없음 ${r.na}건 제외</span>`:``);
   }
   const nai=$("r-nainfo");
@@ -950,7 +949,9 @@ function buildResult(){
     if(r.naStages.includes(st)) return `<div class="stage-score"><span>${esc(st)}</span><b class="zero" style="color:var(--sub);">제외(해당없음)</b></div>`;
     const d=r.stageMap[st]||0;
     return `<div class="stage-score"><span>${esc(st)}</span><b class="${d===0?'zero':''}">${d===0?'감점 없음':'−'+d+'점'}</b></div>`;
-  }).join("");
+  }).join("")
+  + `<div class="stage-score" style="border-top:2px solid var(--line);"><span>🚫 절대 금지 10계명${r.ruleViolations.length?` (위반 ${r.ruleViolations.length}건)`:''}</span><b class="${r.ruleDeduct===0?'zero':''}">${r.ruleDeduct===0?'위반 없음':'−'+r.ruleDeduct+'점'}</b></div>`
+  + (r.ruleDeduct>0?`<div class="hint" style="margin-top:8px;">🚫 10계명 감점 <b>−${r.ruleDeduct}점</b>은 단계 감점(원점수)과 달리 <b>100점 환산 후 추가로 차감</b>됩니다. (환산 ${r.normScore}점 − ${r.ruleDeduct}점${r.bonus?` + 가산 ${r.bonus}점`:''} = ${r.score}점${(r.normScore-r.ruleDeduct+r.bonus)!==r.score?' · 0~100점 범위 적용':''})</div>`:'');
   const rows=[];
   r.items.forEach(i=>{
     const a=session.answers[i.no]||{};
@@ -994,7 +995,6 @@ function resetHomeForm(){
   $("f-store").value=""; $("f-target").value=""; $("f-inspector").value="";
   $("f-date").value=todayStr(); $("f-weekday").value=weekdayOf(todayStr());
   $("f-version").querySelectorAll(".chip.on").forEach(c=>c.classList.remove("on"));
-  $("f-type").querySelectorAll(".chip.on").forEach(c=>c.classList.remove("on"));
   $("f-order").querySelectorAll(".chip.on").forEach(c=>c.classList.remove("on"));
   $("resumeHint").style.display="none";
   if($("r-comment")) $("r-comment").value="";
@@ -1007,7 +1007,7 @@ function buildPayload(){
     id:session.id, sentAt:new Date().toISOString(),
     brand:session.brand, store:session.store, target:session.target||"", inspector:session.inspector,
     date:session.date, weekday:session.weekday,
-    inspectType:session.inspectType.join(","), order:session.order,
+    inspectType:(session.inspectType||[]).join(","), order:session.order,   // 점검구분 폐지 — 예전 기록 재전송 호환용
     score:r.score, grade:r.grade, bonus:r.bonus,
     rawScore:r.rawScore, maxScore:r.maxDeduct,
     naStages:r.naStages.join(","),
@@ -1090,8 +1090,8 @@ function deleteHistory(id){ saveHistory(getHistory().filter(h=>h.id!==id)); rend
 function downloadCSV(){
   const r=compute();
   const lines=[];
-  lines.push(["브랜드","지점","피점검자","점검자","점검일","요일","점검구분","주문방식","총점","등급","가산점","해당없음","미응답","제외단계","원점수","만점"].join(","));
-  lines.push([session.brand,session.store,session.target||"",session.inspector,session.date,session.weekday,session.inspectType.join("/"),session.order,r.score,r.grade,r.bonus,r.na,r.unanswered,r.naStages.join("/"),r.rawScore,r.maxDeduct].map(csv).join(","));
+  lines.push(["브랜드","지점","피점검자","점검자","점검일","요일","주문방식","총점","등급","가산점","해당없음","미응답","제외단계","원점수","만점"].join(","));
+  lines.push([session.brand,session.store,session.target||"",session.inspector,session.date,session.weekday,session.order,r.score,r.grade,r.bonus,r.na,r.unanswered,r.naStages.join("/"),r.rawScore,r.maxDeduct].map(csv).join(","));
   lines.push("");
   lines.push(["No","단계","구분","항목","응답","감점","비고"].join(","));
   r.items.forEach(i=>{
