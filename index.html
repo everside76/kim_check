@@ -584,8 +584,12 @@ const LS = { hist:"kim_mot_history_v1", set:"kim_mot_settings_v1", draft:"kim_mo
 const DEFAULT_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwc2LY-9Cx1UsRXg5sZ8nwfo6wnXcTIQX0-6eenoTff7SL9FZFT8ENCwryOmseK6VWgZQ/exec";
 
 /* ---------- 앱 버전 & 변경 이력 (최신이 위) ---------- */
-const APP_VERSION = "1.6.0";
+const APP_VERSION = "1.7.0";
 const CHANGELOG = [
+  {v:"1.7.0", date:"2026-07-02", items:[
+    "점검 이력에서 항목을 누르면 저장된 점검 결과 화면을 다시 볼 수 있음 ('결과 보기' 버튼 추가)",
+    "이력 열람 후 '처음으로'를 눌러도 작성 중이던 다른 점검의 임시저장이 유지되도록 보호",
+  ]},
   {v:"1.6.0", date:"2026-07-01", items:[
     "브랜드 버전 분리 — '무르익다'·'익스프레스' 체크리스트를 지점 정보 상단에서 선택",
     "버전별 상이 문항 반영(15·18·19·20·21·23·24·29) — v4 체크리스트 기준",
@@ -965,7 +969,8 @@ function buildResult(){
 }
 function finishToHome(){
   persistCurrent(false);
-  storageRemove(LS.draft);
+  const d=loadDraft();                               // 이력 열람 중이면 다른 점검의 임시저장을 지우지 않음
+  if(d && session && d.id===session.id) storageRemove(LS.draft);
   session=null; resetHomeForm();
   showScreen("home"); navStack=["home"];
   toast("점검을 저장했어요");
@@ -1048,7 +1053,7 @@ function renderHistory(){
   if(!hist.length){ $("histList").innerHTML=`<div class="empty"><div class="big">${icon('i-list')}</div>아직 저장된 점검이 없어요.</div>`; return; }
   $("histList").innerHTML=hist.map(h=>{
     const rs=h.result||{};
-    return `<div class="hist">
+    return `<div class="hist" onclick="viewHistory('${h.id}')" style="cursor:pointer;">
       <div class="hist-top">
         <span class="hist-store"><span class="badge brand">${esc(h.brand||'')}</span> ${esc(h.store)}</span>
         <span class="badge ${h.sent?'sent':'unsent'}">${h.sent?'전송됨':'미전송'}</span>
@@ -1060,11 +1065,18 @@ function renderHistory(){
         <span class="hist-meta">△${rs.tri||0} ✕${rs.x||0}${rs.unanswered?(' ?'+rs.unanswered):''} 위반 ${rs.ruleViolations||0}${rs.bonus?(' ★+'+rs.bonus):''}</span>
       </div>
       <div class="btn-row" style="margin-top:12px;">
-        ${h.sent?'':`<button class="btn ghost" style="padding:10px;font-size:14px;" onclick="resendHistory('${h.id}')">🔁 재전송</button>`}
-        <button class="btn secondary" style="padding:10px;font-size:14px;" onclick="deleteHistory('${h.id}')">삭제</button>
+        <button class="btn ghost" style="padding:10px;font-size:14px;" onclick="event.stopPropagation();viewHistory('${h.id}')">📋 결과 보기</button>
+        ${h.sent?'':`<button class="btn ghost" style="padding:10px;font-size:14px;" onclick="event.stopPropagation();resendHistory('${h.id}')">🔁 재전송</button>`}
+        <button class="btn secondary" style="padding:10px;font-size:14px;" onclick="event.stopPropagation();deleteHistory('${h.id}')">삭제</button>
       </div>
     </div>`;
   }).join("");
+}
+function viewHistory(id){
+  const h=getHistory().find(x=>x.id===id); if(!h){ toast("점검 기록을 찾을 수 없어요"); return; }
+  session=JSON.parse(JSON.stringify(h));            // 저장된 점검을 세션으로 복원해 결과 화면 재구성
+  if($("r-comment")) $("r-comment").value=h.comment||"";
+  showScreen("result");
 }
 async function resendHistory(id){
   const hist=getHistory(); const h=hist.find(x=>x.id===id); if(!h)return;
