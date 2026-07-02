@@ -424,6 +424,8 @@
 
   <!-- HISTORY -->
   <section class="screen" id="screen-history">
+    <button class="btn secondary" id="onlineHistBtn" onclick="toggleOnlineHistory()" style="margin-bottom:12px;">🌐 온라인 점검이력 확인 (구글 시트)</button>
+    <div id="onlineHistList" style="display:none;"></div>
     <div id="histList"></div>
   </section>
 
@@ -578,8 +580,13 @@ const LS = { hist:"kim_mot_history_v1", set:"kim_mot_settings_v1", draft:"kim_mo
 const DEFAULT_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwc2LY-9Cx1UsRXg5sZ8nwfo6wnXcTIQX0-6eenoTff7SL9FZFT8ENCwryOmseK6VWgZQ/exec";
 
 /* ---------- 앱 버전 & 변경 이력 (최신이 위) ---------- */
-const APP_VERSION = "1.8.0";
+const APP_VERSION = "1.9.0";
 const CHANGELOG = [
+  {v:"1.9.0", date:"2026-07-02", items:[
+    "점검 이력에 '온라인 점검이력 확인' 버튼 추가 — 구글 시트에 저장된 점검 목록을 불러와 표시",
+    "온라인 목록에서 점포를 누르면 시트의 점검 결과를 결과 화면으로 복원해 표시 (기기 이력에는 저장 안 함)",
+    "⚠️ 온라인 이력 기능은 Apps Script 재배포 필요 (?action=list / detail 조회 추가)",
+  ]},
   {v:"1.8.0", date:"2026-07-02", items:[
     "단계별 감점에 '절대 금지 10계명' 행 추가 — 위반 건수와 감점 표시",
     "10계명 감점이 100점 환산 후 추가 차감임을 계산식과 함께 안내 (환산 − 위반 = 최종)",
@@ -977,7 +984,7 @@ function finishToHome(){
   toast("점검을 저장했어요");
 }
 function persistCurrent(sent){
-  if(!session) return;
+  if(!session || session.online) return;              // 온라인(구글 시트) 열람 건은 기기 이력에 저장하지 않음
   const r=compute();
   session.comment=$("r-comment")?$("r-comment").value:session.comment;
   session.result={score:r.score,grade:r.grade,ok:r.ok,tri:r.tri,x:r.x,na:r.na,bonus:r.bonus,
@@ -1085,6 +1092,69 @@ async function resendHistory(id){
   await sendToSheet(); renderHistory();
 }
 function deleteHistory(id){ saveHistory(getHistory().filter(h=>h.id!==id)); renderHistory(); toast("삭제했어요"); }
+
+/* ---------- 온라인(구글 시트) 점검 이력 ---------- */
+let onlineHistOpen=false;
+async function toggleOnlineHistory(){
+  const box=$("onlineHistList"), local=$("histList"), btn=$("onlineHistBtn");
+  if(onlineHistOpen){                                  // 온라인 → 기기 이력으로 복귀
+    onlineHistOpen=false; box.style.display="none"; local.style.display="block";
+    btn.textContent="🌐 온라인 점검이력 확인 (구글 시트)"; return;
+  }
+  const url=getScriptUrl();
+  if(!url){ toast("구글 시트 URL을 확인해 주세요"); showScreen("settings"); return; }
+  btn.disabled=true; btn.textContent="⏳ 온라인 이력을 불러오는 중…";
+  try{
+    const res=await fetch(url+"?action=list");
+    const j=await res.json();
+    if(!(j&&j.result==="success"&&Array.isArray(j.list))) throw new Error("server");
+    renderOnlineHistory(j.list);
+    onlineHistOpen=true; box.style.display="block"; local.style.display="none";
+    btn.textContent="📱 이 기기에 저장된 이력 보기";
+  }catch(err){
+    toast("온라인 이력을 불러오지 못했어요. 네트워크를 확인해 주세요");
+    btn.textContent="🌐 온라인 점검이력 확인 (구글 시트)";
+  }
+  btn.disabled=false;
+}
+function renderOnlineHistory(list){
+  const box=$("onlineHistList");
+  if(!list.length){ box.innerHTML=`<div class="empty"><div class="big">${icon('i-list')}</div>구글 시트에 저장된 점검이 아직 없어요.</div>`; return; }
+  box.innerHTML=`<p class="hint" style="margin:0 2px 10px;">🌐 구글 시트에 저장된 점검 <b>${list.length}</b>건 · 점포를 누르면 점검 결과 화면으로 보여드려요.</p>`
+    + list.map(o=>`
+    <div class="hist" onclick="viewOnlineResult('${esc(o.id)}')" style="cursor:pointer;">
+      <div class="hist-top">
+        <span class="hist-store"><span class="badge brand">${esc(o.brand||'')}</span> ${esc(o.store||'')}</span>
+        <span class="grade grade-${esc(o.grade||'C')}" style="margin:0;padding:3px 10px;font-size:13px;">${o.score??'-'}점 · ${esc(o.grade||'-')}</span>
+      </div>
+      <div class="hist-meta">${esc(o.date||'')}${o.weekday?` (${esc(o.weekday)})`:''} · ${o.target?'대상 '+esc(o.target)+' · ':''}점검 ${esc(o.inspector||'')}${o.order?' · '+esc(o.order):''}${Number(o.ruleViolations)?` · 🚫 위반 ${esc(o.ruleViolations)}건`:''}</div>
+    </div>`).join("");
+}
+async function viewOnlineResult(id){
+  const url=getScriptUrl();
+  if(!url){ toast("구글 시트 URL을 확인해 주세요"); return; }
+  toast("점검 결과를 불러오는 중…");
+  try{
+    const res=await fetch(url+"?action=detail&id="+encodeURIComponent(id));
+    const j=await res.json();
+    if(!(j&&j.result==="success"&&j.summary)) throw new Error((j&&j.message)||"server");
+    const s=j.summary;
+    const VAL={"이행":"O","미흡":"T","불이행":"X","해당없음":"N"};   // 미응답 → ""
+    const answers={};
+    (j.items||[]).forEach(it=>{
+      const no=String(it.no);
+      answers[no]={ value: VAL[it.label]||"", note: it.note||"" };
+      if(Number(it.bonus)>0) answers[no].bonusOn=true;
+    });
+    const rules={};
+    (j.rules||[]).forEach(rl=>{ rules[String(rl.no)]={occurred:true, action:rl.action||""}; });
+    session={ id:s.id, brand:s.brand, store:s.store, target:s.target||"", inspector:s.inspector,
+      date:s.date, weekday:s.weekday, order:s.order, answers, rules,
+      comment:s.comment||"", sent:true, sentAt:"", online:true };   // online: 기기 이력에 저장하지 않음
+    if($("r-comment")) $("r-comment").value=s.comment||"";
+    showScreen("result");
+  }catch(err){ toast("점검 결과를 불러오지 못했어요"); }
+}
 
 /* ---------- CSV ---------- */
 function downloadCSV(){

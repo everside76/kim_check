@@ -110,10 +110,88 @@ function doPost(e) {
 }
 
 /**
- * 브라우저로 URL 직접 열었을 때 동작 확인용
+ * GET 요청 처리
+ *  - ?action=list          : 점검요약 목록(최신순, 최대 300건)
+ *  - ?action=detail&id=... : 해당 점검의 요약 + 항목 상세 + 10계명 위반
+ *  - 그 외                 : 동작 확인용 응답
  */
-function doGet() {
+function doGet(e) {
+  var action = (e && e.parameter) ? e.parameter.action : '';
+  try {
+    if (action === 'list')   return json_({ result: 'success', list: listSummaries_() });
+    if (action === 'detail') return json_(getDetail_(e.parameter.id));
+  } catch (err) {
+    return json_({ result: 'error', message: String(err) });
+  }
   return json_({ result: 'ok', message: '김치옥 MOT 수신 서버가 정상 동작 중입니다.' });
+}
+
+function fmtDate_(v, tz, pattern) {
+  if (v instanceof Date) return Utilities.formatDate(v, tz, pattern);
+  return v == null ? '' : String(v);
+}
+
+// 점검요약 시트 → 목록 (최신순)
+function listSummaries_() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var tz = ss.getSpreadsheetTimeZone() || 'Asia/Seoul';
+  var sh = ss.getSheetByName(SHEET_SUMMARY);
+  if (!sh || sh.getLastRow() < 2) return [];
+  var rows = sh.getRange(2, 1, sh.getLastRow() - 1, 24).getValues();
+  var out = [];
+  rows.forEach(function (r) {
+    if (!r[1]) return;
+    out.push({
+      sentAt: fmtDate_(r[0], tz, 'yyyy-MM-dd HH:mm'),
+      id: String(r[1]), brand: String(r[2] || ''), store: String(r[3] || ''),
+      target: String(r[4] || ''), inspector: String(r[5] || ''),
+      date: fmtDate_(r[6], tz, 'yyyy-MM-dd'), weekday: String(r[7] || ''),
+      order: String(r[9] || ''), score: r[10], grade: String(r[11] || ''),
+      bonus: r[12], ruleViolations: r[17]
+    });
+  });
+  out.reverse();                       // 최신 먼저
+  return out.slice(0, 300);
+}
+
+// 점검 1건 상세 (요약 + 항목 + 10계명 위반)
+function getDetail_(id) {
+  if (!id) return { result: 'error', message: 'id가 없습니다' };
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var tz = ss.getSpreadsheetTimeZone() || 'Asia/Seoul';
+  var sm = ss.getSheetByName(SHEET_SUMMARY);
+  var summary = null;
+  if (sm && sm.getLastRow() >= 2) {
+    var rows = sm.getRange(2, 1, sm.getLastRow() - 1, 24).getValues();
+    for (var i = rows.length - 1; i >= 0; i--) {
+      if (String(rows[i][1]) === String(id)) {
+        var r = rows[i];
+        summary = { id: String(r[1]), brand: String(r[2] || ''), store: String(r[3] || ''),
+          target: String(r[4] || ''), inspector: String(r[5] || ''),
+          date: fmtDate_(r[6], tz, 'yyyy-MM-dd'), weekday: String(r[7] || ''),
+          order: String(r[9] || ''), score: r[10], grade: String(r[11] || ''),
+          bonus: r[12], comment: String(r[19] || '') };
+        break;
+      }
+    }
+  }
+  if (!summary) return { result: 'error', message: '해당 점검을 찾을 수 없습니다' };
+  var items = [], rules = [];
+  var dt = ss.getSheetByName(SHEET_DETAIL);
+  if (dt && dt.getLastRow() >= 2) {
+    var drows = dt.getRange(2, 1, dt.getLastRow() - 1, 13).getValues();
+    drows.forEach(function (r) {
+      if (String(r[1]) !== String(id)) return;
+      var no = String(r[5] == null ? '' : r[5]);
+      if (no.indexOf('계명') === 0) {
+        rules.push({ no: no.replace('계명', ''), key: String(r[7] || ''), desc: String(r[8] || ''), action: String(r[12] || '') });
+      } else {
+        items.push({ no: no, stage: String(r[6] || ''), type: String(r[7] || ''), text: String(r[8] || ''),
+          label: String(r[9] || ''), penalty: r[10], bonus: r[11], note: String(r[12] || '') });
+      }
+    });
+  }
+  return { result: 'success', summary: summary, items: items, rules: rules };
 }
 
 /* ---------------- 보조 함수 ---------------- */
