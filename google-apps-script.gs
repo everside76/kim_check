@@ -19,6 +19,7 @@
 // 시트 이름 (원하면 바꿔도 됨)
 var SHEET_SUMMARY = '점검요약';
 var SHEET_DETAIL  = '항목상세';
+var SHEET_STORES  = '점포명';     // 점포명 자동완성 목록(첫 열에 점포명 나열)
 
 // 요약 시트 헤더
 var HEAD_SUMMARY = [
@@ -120,10 +121,27 @@ function doGet(e) {
   try {
     if (action === 'list')   return json_({ result: 'success', list: listSummaries_() });
     if (action === 'detail') return json_(getDetail_(e.parameter.id));
+    if (action === 'stores') return json_({ result: 'success', stores: listStores_() });
   } catch (err) {
     return json_({ result: 'error', message: String(err) });
   }
   return json_({ result: 'ok', message: '김치옥 MOT 수신 서버가 정상 동작 중입니다.' });
+}
+
+// '점포명' 시트 첫 열의 점포명 목록 (헤더·중복·공백 제외)
+function listStores_() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sh = ss.getSheetByName(SHEET_STORES);
+  if (!sh || sh.getLastRow() < 1) return [];
+  var vals = sh.getRange(1, 1, sh.getLastRow(), 1).getValues();
+  var HEADERS = { '점포명': 1, '지점명': 1, '매장명': 1, '점포': 1, 'store': 1, 'Store': 1 };
+  var out = [], seen = {};
+  vals.forEach(function (r) {
+    var v = (r[0] == null ? '' : String(r[0])).trim();
+    if (!v || HEADERS[v] || seen[v]) return;
+    seen[v] = true; out.push(v);
+  });
+  return out;
 }
 
 function fmtDate_(v, tz, pattern) {
