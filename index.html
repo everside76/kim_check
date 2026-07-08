@@ -615,12 +615,16 @@ const RULES = [
 
 const RULE_PENALTY = 5;
 const WEEKDAYS = ["일","월","화","수","목","금","토"];
-const LS = { hist:"kim_mot_history_v1", set:"kim_mot_settings_v1", draft:"kim_mot_draft_v1", inspector:"kim_mot_inspector_v1" };
+const LS = { hist:"kim_mot_history_v1", set:"kim_mot_settings_v1", draft:"kim_mot_draft_v1", inspector:"kim_mot_inspector_v1", last:"kim_mot_last_input_v1" };
 const DEFAULT_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwc2LY-9Cx1UsRXg5sZ8nwfo6wnXcTIQX0-6eenoTff7SL9FZFT8ENCwryOmseK6VWgZQ/exec";
 
 /* ---------- 앱 버전 & 변경 이력 (최신이 위) ---------- */
-const APP_VERSION = "1.14.2";
+const APP_VERSION = "1.14.3";
 const CHANGELOG = [
+  {v:"1.14.3", date:"2026-07-02", items:[
+    "최근 입력값 기억 — 브랜드 버전·점포명·홀 근무인원·주문방식·점검일·시간·점검자를 다음 점검에 기본값으로 표시",
+    "단, 피점검자(대상 직원)는 항상 비워둠",
+  ]},
   {v:"1.14.2", date:"2026-07-02", items:[
     "점검자 이름을 이 기기(브라우저)에 기억 — 다음 점검부터 자동으로 기본값 표시",
   ]},
@@ -785,16 +789,29 @@ function fillTimeSelect(){                              // 점검 시간: 0~23�
   const nowH=new Date().getHours();
   sel.innerHTML=Array.from({length:24},(_,h)=>`<option value="${h}시"${h===nowH?' selected':''}>${h}시</option>`).join("");
 }
+// 최근 입력 기억 (이 기기) — 버전·점포명·홀 인원·주문방식·점검일·시간·점검자. 피점검자는 저장 안 함
+function saveLastInput(v){ try{ storageSet(LS.last, JSON.stringify(v)); }catch(e){} }
+function loadLastInput(){ try{ return JSON.parse(storageGet(LS.last))||{}; }catch(e){ return {}; } }
+function applyLastInput(){
+  const L=loadLastInput();
+  if(L.version){ $("f-version").querySelectorAll(".chip").forEach(c=>c.classList.toggle("on", c.dataset.v===L.version)); }
+  if(L.store) $("f-store").value=L.store;
+  if(L.staff!=null && L.staff!=="") $("f-staff").value=L.staff;
+  if(L.inspector) $("f-inspector").value=L.inspector;
+  $("f-target").value="";                              // 피점검자(대상 직원)는 항상 비움
+  if(L.date){ $("f-date").value=L.date; $("f-weekday").value=weekdayOf(L.date); }
+  if(L.time){ const sel=$("f-time"); if(sel && [...sel.options].some(o=>o.value===L.time)) sel.value=L.time; }
+  if(L.order){ $("f-order").querySelectorAll(".chip").forEach(c=>c.classList.toggle("on", c.dataset.v===L.order)); }
+}
 function initHome(){
   $("f-date").value=todayStr();
   $("f-weekday").value=weekdayOf(todayStr());
   fillTimeSelect();
-  const savedInspector=storageGet(LS.inspector);       // 이 기기에서 마지막에 입력한 점검자 기본값
-  if(savedInspector && !$("f-inspector").value) $("f-inspector").value=savedInspector;
   $("f-date").addEventListener("change",e=>$("f-weekday").value=weekdayOf(e.target.value));
   ["f-version","f-order"].forEach(id=>$(id).querySelectorAll(".chip").forEach(c=>c.addEventListener("click",()=>{
     $(id).querySelectorAll(".chip").forEach(x=>x.classList.remove("on")); c.classList.add("on");
   })));
+  applyLastInput();                                    // 최근 입력 복원(피점검자 제외)
   const draft=loadDraft();
   if(draft){
     $("resumeHint").style.display="block";
@@ -820,7 +837,7 @@ function startInspection(){
   if(!date){toast("점검일을 선택해 주세요");$("f-date").focus();return;}
   if(!time){toast("점검 시간을 선택해 주세요");$("f-time").focus();return;}
   if(!order){toast("주문 방식을 선택해 주세요");return;}
-  storageSet(LS.inspector, inspector);                 // 이 기기의 기본 점검자로 기억
+  saveLastInput({ version, store, staff, order, date, time, inspector });   // 최근 입력 기억(피점검자 제외)
   session={ id:uid(), brand:"김치옥 "+version, store, target, inspector,
     date:$("f-date").value, weekday:$("f-weekday").value, time, staff,
     order, answers:{}, rules:{}, comment:"", sent:false, sentAt:null };
@@ -1136,10 +1153,11 @@ function persistCurrent(sent){
   saveHistory(hist);
 }
 function resetHomeForm(){
-  $("f-store").value=""; $("f-staff").value=""; $("f-target").value=""; $("f-inspector").value=storageGet(LS.inspector)||""; hideStoreSuggest();
+  $("f-store").value=""; $("f-staff").value=""; $("f-target").value=""; $("f-inspector").value=""; hideStoreSuggest();
   $("f-date").value=todayStr(); $("f-weekday").value=weekdayOf(todayStr()); fillTimeSelect();
   $("f-version").querySelectorAll(".chip.on").forEach(c=>c.classList.remove("on"));
   $("f-order").querySelectorAll(".chip.on").forEach(c=>c.classList.remove("on"));
+  applyLastInput();                                    // 최근 입력 복원(피점검자는 항상 비움)
   $("resumeHint").style.display="none";
   if($("r-comment")) $("r-comment").value="";
 }
