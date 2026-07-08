@@ -88,7 +88,7 @@
   label.field{display:block; margin-bottom:11px;}
   label.field:last-child{margin-bottom:0;}
   .field > span{display:block; font-size:12px; color:var(--sub); margin-bottom:6px; font-weight:800;}
-  input[type=text], input[type=date], textarea, select{
+  input[type=text], input[type=date], input[type=number], textarea, select{
     width:100%; padding:11px 14px; border:1px solid var(--line); border-radius:10px;
     background:#fbfbfc; color:var(--ink); font-size:16px; font-family:inherit; box-shadow:inset 0 1px 0 rgba(255,255,255,.7);
   }
@@ -233,6 +233,13 @@
   .store-suggest .ss-item:active,.store-suggest .ss-item:hover{background:var(--bg);}
   .store-suggest .ss-sim{font-size:11px; font-weight:800; color:var(--sub); flex:0 0 auto;}
   .store-suggest .ss-note{padding:9px 14px; font-size:12px; color:var(--sub); background:var(--bg); border-top:1px solid var(--line);}
+  .num-row{display:flex; gap:8px; align-items:stretch;}
+  .num-row input{flex:1;}
+  input[type=number].no-spin{-moz-appearance:textfield;}
+  input[type=number].no-spin::-webkit-outer-spin-button,input[type=number].no-spin::-webkit-inner-spin-button{-webkit-appearance:none; margin:0;}
+  .num-step{display:flex; flex-direction:row; gap:6px; flex:0 0 auto;}
+  .num-btn{width:52px; border:1px solid var(--line); border-radius:12px; background:var(--card); color:var(--brand); font-size:22px; font-weight:900; line-height:1; cursor:pointer; font-family:inherit; display:flex; align-items:center; justify-content:center; user-select:none; box-shadow:var(--shadow-sm);}
+  .num-btn:active{background:var(--brand); color:var(--on-brand); border-color:var(--brand);}
   .toast{
     position:fixed; left:50%; bottom:90px; transform:translateX(-50%) translateY(20px);
     background:var(--ink); color:var(--bg); padding:13px 20px; border-radius:12px; font-size:14px; font-weight:700;
@@ -262,7 +269,7 @@
     .intake-card{padding:14px;}
     label.field{margin-bottom:8px;}
     .field > span{margin-bottom:4px;}
-    input[type=text], input[type=date], textarea, select{padding:10px 12px;}
+    input[type=text], input[type=date], input[type=number], textarea, select{padding:10px 12px;}
     .chip{padding:8px 12px;}
     .btn{padding:14px;}
     .shortcut-guide{font-size:12px;}
@@ -270,7 +277,7 @@
   @media (prefers-color-scheme: dark){
     body{background:linear-gradient(180deg,#181b22 0%,var(--bg) 36%,var(--bg) 100%);}
     .app{background:linear-gradient(180deg,rgba(255,255,255,.03),rgba(255,255,255,0) 260px);}
-    input[type=text], input[type=date], textarea, select,
+    input[type=text], input[type=date], input[type=number], textarea, select,
     .chip, .ans, .stat{background:#181b22; color:var(--ink);}
     input:focus,textarea:focus,select:focus{background:#1f232b;}
     .check-sticky{background:rgba(20,22,27,.94);}
@@ -331,7 +338,13 @@
         <div id="storeSuggest" class="store-suggest" style="display:none;"></div>
         <div class="hint">입력하면 등록된 <b>점포명 중 비슷한 이름</b>을 추천해 드려요. 목록에서 눌러 정확히 선택하세요.</div></label>
       <label class="field"><span>총 홀 근무인원 <i class="req">*</i></span>
-        <input type="number" id="f-staff" min="0" max="99" inputmode="numeric" placeholder="예) 5" autocomplete="off" />
+        <div class="num-row">
+          <input type="number" id="f-staff" class="no-spin" min="0" max="99" inputmode="numeric" placeholder="예) 5" autocomplete="off" />
+          <div class="num-step">
+            <button type="button" class="num-btn" onclick="stepStaff(1)" aria-label="1 증가">▲</button>
+            <button type="button" class="num-btn" onclick="stepStaff(-1)" aria-label="1 감소">▼</button>
+          </div>
+        </div>
         <div class="hint">점검 시점에 홀에서 근무 중인 총 인원 수(명)를 숫자로 입력하세요. <b>(점주 포함)</b></div></label>
       <label class="field"><span>피점검자 (대상 직원) <i class="req">*</i></span>
         <input type="text" id="f-target" placeholder="평가 대상 직원 이름" autocomplete="off" /></label>
@@ -606,10 +619,14 @@ const LS = { hist:"kim_mot_history_v1", set:"kim_mot_settings_v1", draft:"kim_mo
 const DEFAULT_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwc2LY-9Cx1UsRXg5sZ8nwfo6wnXcTIQX0-6eenoTff7SL9FZFT8ENCwryOmseK6VWgZQ/exec";
 
 /* ---------- 앱 버전 & 변경 이력 (최신이 위) ---------- */
-const APP_VERSION = "1.14.0";
+const APP_VERSION = "1.14.1";
 const CHANGELOG = [
+  {v:"1.14.1", date:"2026-07-02", items:[
+    "홀 근무인원 입력칸 오른쪽에 ▲(올림)/▼(내림) 증감 버튼 추가 — 가로 배치로 행 높이 유지",
+    "숫자 입력칸 양식을 다른 입력칸과 통일 (테두리·라운드·글꼴 일치)",
+  ]},
   {v:"1.14.0", date:"2026-07-02", items:[
-    "점검 정보 지점명 아래에 '총 홀 근무인원'(명) 필수 입력 추가",
+    "점검 정보 지점명 아래에 '총 홀 근무인원'(명, 점주 포함) 필수 입력 추가",
     "시트·CSV·이력에 홀근무인원 기록 (⚠️ 시트 반영은 Apps Script 재배포 필요)",
   ]},
   {v:"1.13.0", date:"2026-07-02", items:[
@@ -755,6 +772,11 @@ async function installShortcut(){
 }
 
 /* ---------- 홈 ---------- */
+function stepStaff(d){                                  // 홀 근무인원 ▲/▼ (0~99)
+  const el=$("f-staff"); if(!el) return;
+  let v=parseInt(el.value,10); if(isNaN(v)) v=0;
+  el.value=Math.max(0, Math.min(99, v+d));
+}
 function fillTimeSelect(){                              // 점검 시간: 0~23시, 기본값 현재 시각
   const sel=$("f-time"); if(!sel) return;
   const nowH=new Date().getHours();
