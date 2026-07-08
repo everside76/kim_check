@@ -330,6 +330,9 @@
         <input type="text" id="f-store" placeholder="예) 강남점" autocomplete="off" oninput="onStoreInput()" onfocus="ensureStoreList()" onblur="setTimeout(hideStoreSuggest,180)" />
         <div id="storeSuggest" class="store-suggest" style="display:none;"></div>
         <div class="hint">입력하면 등록된 <b>점포명 중 비슷한 이름</b>을 추천해 드려요. 목록에서 눌러 정확히 선택하세요.</div></label>
+      <label class="field"><span>총 홀 근무인원 <i class="req">*</i></span>
+        <input type="number" id="f-staff" min="0" max="99" inputmode="numeric" placeholder="예) 5" autocomplete="off" />
+        <div class="hint">점검 시점에 홀에서 근무 중인 총 인원 수(명)를 숫자로 입력하세요. <b>(점주 포함)</b></div></label>
       <label class="field"><span>피점검자 (대상 직원) <i class="req">*</i></span>
         <input type="text" id="f-target" placeholder="평가 대상 직원 이름" autocomplete="off" /></label>
       <label class="field"><span>점검자 <i class="req">*</i></span>
@@ -603,8 +606,12 @@ const LS = { hist:"kim_mot_history_v1", set:"kim_mot_settings_v1", draft:"kim_mo
 const DEFAULT_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwc2LY-9Cx1UsRXg5sZ8nwfo6wnXcTIQX0-6eenoTff7SL9FZFT8ENCwryOmseK6VWgZQ/exec";
 
 /* ---------- 앱 버전 & 변경 이력 (최신이 위) ---------- */
-const APP_VERSION = "1.13.0";
+const APP_VERSION = "1.14.0";
 const CHANGELOG = [
+  {v:"1.14.0", date:"2026-07-02", items:[
+    "점검 정보 지점명 아래에 '총 홀 근무인원'(명) 필수 입력 추가",
+    "시트·CSV·이력에 홀근무인원 기록 (⚠️ 시트 반영은 Apps Script 재배포 필요)",
+  ]},
   {v:"1.13.0", date:"2026-07-02", items:[
     "점검 정보에 '점검 시간' 필수 입력 추가 — 점검일 아래, 시간 단위(0~23시) 선택, 기본값 현재 시각",
     "피점검자·점검일도 필수 항목으로 지정",
@@ -777,15 +784,17 @@ function startInspection(){
   const order=($("f-order").querySelector(".chip.on")||{}).dataset?.v;
   const time=$("f-time").value;
   const date=$("f-date").value;
+  const staff=$("f-staff").value.trim();
   if(!version){toast("브랜드(버전)를 선택해 주세요");return;}
   if(!store){toast("지점명을 입력해 주세요");$("f-store").focus();return;}
+  if(!staff){toast("총 홀 근무인원을 입력해 주세요");$("f-staff").focus();return;}
   if(!target){toast("피점검자를 입력해 주세요");$("f-target").focus();return;}
   if(!inspector){toast("점검자를 입력해 주세요");$("f-inspector").focus();return;}
   if(!date){toast("점검일을 선택해 주세요");$("f-date").focus();return;}
   if(!time){toast("점검 시간을 선택해 주세요");$("f-time").focus();return;}
   if(!order){toast("주문 방식을 선택해 주세요");return;}
   session={ id:uid(), brand:"김치옥 "+version, store, target, inspector,
-    date:$("f-date").value, weekday:$("f-weekday").value, time,
+    date:$("f-date").value, weekday:$("f-weekday").value, time, staff,
     order, answers:{}, rules:{}, comment:"", sent:false, sentAt:null };
   saveDraft(); renderCheck(); showScreen("check");
 }
@@ -1099,7 +1108,7 @@ function persistCurrent(sent){
   saveHistory(hist);
 }
 function resetHomeForm(){
-  $("f-store").value=""; $("f-target").value=""; $("f-inspector").value=""; hideStoreSuggest();
+  $("f-store").value=""; $("f-staff").value=""; $("f-target").value=""; $("f-inspector").value=""; hideStoreSuggest();
   $("f-date").value=todayStr(); $("f-weekday").value=weekdayOf(todayStr()); fillTimeSelect();
   $("f-version").querySelectorAll(".chip.on").forEach(c=>c.classList.remove("on"));
   $("f-order").querySelectorAll(".chip.on").forEach(c=>c.classList.remove("on"));
@@ -1113,7 +1122,7 @@ function buildPayload(){
   return {
     id:session.id, sentAt:new Date().toISOString(),
     brand:session.brand, store:session.store, target:session.target||"", inspector:session.inspector,
-    date:session.date, weekday:session.weekday, time:session.time||"",
+    date:session.date, weekday:session.weekday, time:session.time||"", staff:session.staff||"",
     inspectType:(session.inspectType||[]).join(","), order:session.order,   // 점검구분 폐지 — 예전 기록 재전송 호환용
     score:r.score, grade:r.grade, bonus:r.bonus,
     rawScore:r.rawScore, maxScore:r.maxDeduct,
@@ -1165,7 +1174,7 @@ function renderHistory(){
         <span class="hist-store"><span class="badge brand">${esc(h.brand||'')}</span> ${esc(h.store)}</span>
         <span class="badge ${h.sent?'sent':'unsent'}">${h.sent?'전송됨':'미전송'}</span>
       </div>
-      <div class="hist-meta">${esc(h.date)} (${esc(h.weekday)})${h.time?' '+esc(h.time):''} · ${h.target?'대상 '+esc(h.target)+' · ':''}점검 ${esc(h.inspector)} · ${esc(h.order)}</div>
+      <div class="hist-meta">${esc(h.date)} (${esc(h.weekday)})${h.time?' '+esc(h.time):''} · ${h.target?'대상 '+esc(h.target)+' · ':''}점검 ${esc(h.inspector)} · ${esc(h.order)}${h.staff?' · 홀 '+esc(h.staff)+'명':''}</div>
       ${rs.naStages?`<div class="hist-meta" style="margin-top:2px;">제외 단계(해당없음): ${esc(rs.naStages)}</div>`:(rs.na?`<div class="hist-meta" style="margin-top:2px;">해당없음 ${esc(rs.na)}건 제외</div>`:'')}
       <div style="display:flex;align-items:center;gap:12px;margin-top:10px;">
         <span class="grade grade-${rs.grade||'C'}" style="margin:0;padding:4px 12px;font-size:14px;">${rs.score??'-'}점 · ${rs.grade||'-'}</span>
@@ -1244,7 +1253,7 @@ function renderOnlineItems(list, raw){
         <span class="hist-store"><span class="badge brand">${esc(o.brand||'')}</span> ${esc(o.store||'')}</span>
         <span class="grade grade-${esc(o.grade||'C')}" style="margin:0;padding:3px 10px;font-size:13px;">${o.score??'-'}점 · ${esc(o.grade||'-')}</span>
       </div>
-      <div class="hist-meta">${esc(o.date||'')}${o.weekday?` (${esc(o.weekday)})`:''}${o.time?' '+esc(o.time):''} · ${o.target?'대상 '+esc(o.target)+' · ':''}점검 ${esc(o.inspector||'')}${o.order?' · '+esc(o.order):''}${Number(o.ruleViolations)?` · 🚫 위반 ${esc(o.ruleViolations)}건`:''}</div>
+      <div class="hist-meta">${esc(o.date||'')}${o.weekday?` (${esc(o.weekday)})`:''}${o.time?' '+esc(o.time):''} · ${o.target?'대상 '+esc(o.target)+' · ':''}점검 ${esc(o.inspector||'')}${o.order?' · '+esc(o.order):''}${o.staff?' · 홀 '+esc(o.staff)+'명':''}${Number(o.ruleViolations)?` · 🚫 위반 ${esc(o.ruleViolations)}건`:''}</div>
     </div>`).join("");
 }
 async function viewOnlineResult(id){
@@ -1266,7 +1275,7 @@ async function viewOnlineResult(id){
     const rules={};
     (j.rules||[]).forEach(rl=>{ rules[String(rl.no)]={occurred:true, action:rl.action||""}; });
     session={ id:s.id, brand:s.brand, store:s.store, target:s.target||"", inspector:s.inspector,
-      date:s.date, weekday:s.weekday, time:s.time||"", order:s.order, answers, rules,
+      date:s.date, weekday:s.weekday, time:s.time||"", staff:s.staff||"", order:s.order, answers, rules,
       comment:s.comment||"", sent:true, sentAt:"", online:true };   // online: 기기 이력에 저장하지 않음
     if($("r-comment")) $("r-comment").value=s.comment||"";
     showScreen("result");
@@ -1277,8 +1286,8 @@ async function viewOnlineResult(id){
 function downloadCSV(){
   const r=compute();
   const lines=[];
-  lines.push(["브랜드","지점","피점검자","점검자","점검일","요일","점검시간","주문방식","총점","등급","가산점","해당없음","미응답","제외단계","원점수","만점"].join(","));
-  lines.push([session.brand,session.store,session.target||"",session.inspector,session.date,session.weekday,session.time||"",session.order,r.score,r.grade,r.bonus,r.na,r.unanswered,r.naStages.join("/"),r.rawScore,r.maxDeduct].map(csv).join(","));
+  lines.push(["브랜드","지점","홀근무인원","피점검자","점검자","점검일","요일","점검시간","주문방식","총점","등급","가산점","해당없음","미응답","제외단계","원점수","만점"].join(","));
+  lines.push([session.brand,session.store,session.staff||"",session.target||"",session.inspector,session.date,session.weekday,session.time||"",session.order,r.score,r.grade,r.bonus,r.na,r.unanswered,r.naStages.join("/"),r.rawScore,r.maxDeduct].map(csv).join(","));
   lines.push("");
   lines.push(["No","단계","구분","항목","응답","감점","비고"].join(","));
   r.items.forEach(i=>{

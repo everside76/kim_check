@@ -25,7 +25,7 @@ var SHEET_STORES  = '점포명';     // 점포명 자동완성 목록(첫 열에
 var HEAD_SUMMARY = [
   '전송일시','점검ID','브랜드','지점명','피점검자','점검자','점검일','요일','점검구분','주문방식',
   '총점','등급','가산점','이행(○)','미흡(△)','불이행(✕)','미응답','10계명위반','총항목수','종합코멘트',
-  '해당없음','제외단계(해당없음)','원점수','만점','점검시간'
+  '해당없음','제외단계(해당없음)','원점수','만점','점검시간','홀근무인원'
 ];
 // 상세 시트 헤더
 var HEAD_DETAIL = [
@@ -78,7 +78,8 @@ function doPost(e) {
       data.naStages || '',
       num_(data.rawScore),
       num_(data.maxScore),
-      data.time || ''
+      data.time || '',
+      num_(data.staff)
     ]);
 
     // --- 2) 항목 상세 (응답/미응답 모든 항목) ---
@@ -156,7 +157,7 @@ function listSummaries_() {
   var tz = ss.getSpreadsheetTimeZone() || 'Asia/Seoul';
   var sh = ss.getSheetByName(SHEET_SUMMARY);
   if (!sh || sh.getLastRow() < 2) return [];
-  var rows = sh.getRange(2, 1, sh.getLastRow() - 1, 25).getValues();
+  var rows = sh.getRange(2, 1, sh.getLastRow() - 1, 26).getValues();
   var out = [];
   rows.forEach(function (r) {
     if (!r[1]) return;
@@ -166,7 +167,7 @@ function listSummaries_() {
       target: String(r[4] || ''), inspector: String(r[5] || ''),
       date: fmtDate_(r[6], tz, 'yyyy-MM-dd'), weekday: String(r[7] || ''),
       order: String(r[9] || ''), score: r[10], grade: String(r[11] || ''),
-      bonus: r[12], ruleViolations: r[17], time: String(r[24] || '')
+      bonus: r[12], ruleViolations: r[17], time: String(r[24] || ''), staff: String(r[25] || '')
     });
   });
   out.reverse();                       // 최신 먼저
@@ -181,7 +182,7 @@ function getDetail_(id) {
   var sm = ss.getSheetByName(SHEET_SUMMARY);
   var summary = null;
   if (sm && sm.getLastRow() >= 2) {
-    var rows = sm.getRange(2, 1, sm.getLastRow() - 1, 25).getValues();
+    var rows = sm.getRange(2, 1, sm.getLastRow() - 1, 26).getValues();
     for (var i = rows.length - 1; i >= 0; i--) {
       if (String(rows[i][1]) === String(id)) {
         var r = rows[i];
@@ -189,7 +190,7 @@ function getDetail_(id) {
           target: String(r[4] || ''), inspector: String(r[5] || ''),
           date: fmtDate_(r[6], tz, 'yyyy-MM-dd'), weekday: String(r[7] || ''),
           order: String(r[9] || ''), score: r[10], grade: String(r[11] || ''),
-          bonus: r[12], comment: String(r[19] || ''), time: String(r[24] || '') };
+          bonus: r[12], comment: String(r[19] || ''), time: String(r[24] || ''), staff: String(r[25] || '') };
         break;
       }
     }
