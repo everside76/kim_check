@@ -193,7 +193,8 @@
   .score-num small{font-size:22px; font-weight:700; color:var(--sub);}
   .grade{display:inline-block; margin-top:10px; padding:6px 18px; border-radius:99px; font-size:18px; font-weight:900; letter-spacing:1px;}
   .grade-S{background:var(--ok-bg); color:var(--ok);} .grade-A{background:#e0edff; color:#1d4ed8;}
-  .grade-B{background:var(--warn-bg); color:var(--warn);} .grade-C{background:var(--bad-bg); color:var(--bad);}
+  .grade-B{background:var(--gold-bg); color:var(--gold);} .grade-C{background:var(--warn-bg); color:var(--warn);}
+  .grade-D{background:var(--bad-bg); color:var(--bad);} .grade-F{background:var(--bad); color:#fff;}
   .stat-row{display:flex; gap:8px; margin-top:18px;}
   .stat{flex:1; background:#fbfbfc; border:1px solid var(--line); border-radius:10px; padding:10px 6px;}
   .stat b{display:block; font-size:20px;} .stat span{font-size:11px; color:var(--sub);}
@@ -492,11 +493,11 @@
     </div>
     <div class="card">
       <h2>점검 안내</h2>
-      <div class="hint">평가: ○ 이행=감점 0 / △ 미흡=배점의 절반 / × 불이행=배점 (문항별 가중 배점) · <b>100점 만점 환산</b><br>
+      <div class="hint">평가: ○ 이행=감점 0 / △ 미흡=배점 절반 / × 불이행=배점 / 해당없음<br>
         📊 <b>해당없음</b> 항목은 채점 제외, 나머지 항목만으로 100점 만점 환산<br>
         ✅ 모든 항목 응답(○·△·✕·해당없음) 완료 후에만 10계명 점검·결과로 진행 (발생하지 않은 서비스는 해당없음)<br>
         🚫 절대 금지 10계명 위반: 1건당 −5점 (환산 후 차감)<br>
-        등급: S(90%↑) / A(80~89%) / B(70~79%) / C(70% 미만)</div>
+        등급: S(90 이상) / A(80~89) / B(70~79) / C(60~69) / D(50~59) / F(50 미만)</div>
     </div>
     <div class="card">
       <h2>데이터 관리</h2>
@@ -619,8 +620,12 @@ const LS = { hist:"kim_mot_history_v1", set:"kim_mot_settings_v1", draft:"kim_mo
 const DEFAULT_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwc2LY-9Cx1UsRXg5sZ8nwfo6wnXcTIQX0-6eenoTff7SL9FZFT8ENCwryOmseK6VWgZQ/exec";
 
 /* ---------- 앱 버전 & 변경 이력 (최신이 위) ---------- */
-const APP_VERSION = "1.14.3";
+const APP_VERSION = "1.15.0";
 const CHANGELOG = [
+  {v:"1.15.0", date:"2026-07-09", items:[
+    "등급 체계 확대 — S·A·B·C·D·F 6단계로 세분화 (C 60~69, D 50~59, F 50 미만)",
+    "점검 안내 문구 갱신 및 등급 배지 색상 재정비",
+  ]},
   {v:"1.14.3", date:"2026-07-02", items:[
     "최근 입력값 기억 — 브랜드 버전·점포명·홀 근무인원·주문방식·점검일·시간·점검자를 다음 점검에 기본값으로 표시",
     "단, 피점검자(대상 직원)는 항상 비워둠",
@@ -1068,7 +1073,7 @@ function compute(){
     const its=items.filter(i=>i.stage===st);
     return its.length>0 && its.every(i=>(session.answers[i.no]||{}).value==="N");
   });
-  const grade=score>=90?"S":score>=80?"A":score>=70?"B":"C";
+  const grade=score>=90?"S":score>=80?"A":score>=70?"B":score>=60?"C":score>=50?"D":"F";
   return {items,ok,tri,x,na,deduct,maxDeduct,unanswered,bonus,ruleViolations,ruleDeduct,score,grade,stageMap,
           rawScore,normScore,allStages,naStages};
 }
