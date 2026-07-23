@@ -198,6 +198,14 @@
   .stat-row{display:flex; gap:8px; margin-top:18px;}
   .stat{flex:1; background:#fbfbfc; border:1px solid var(--line); border-radius:10px; padding:10px 6px;}
   .stat b{display:block; font-size:20px;} .stat span{font-size:11px; color:var(--sub);}
+  /* 점검율(점검 커버리지) */
+  .rate-box{margin-top:16px; padding-top:14px; border-top:1px solid var(--line);}
+  .rate-line{display:flex; align-items:baseline; justify-content:center; gap:10px;}
+  .rate-label{font-size:13px; font-weight:800; color:var(--sub); letter-spacing:.2px;}
+  .rate-value{font-size:21px; font-weight:900; color:var(--ink); line-height:1;}
+  .rate-sub{margin-top:6px; font-size:12px; color:var(--sub); line-height:1.5;}
+  .cap-note{margin:9px 0 0; font-size:12.5px; font-weight:800; color:var(--warn); line-height:1.5;}
+  .recheck-warn{margin-top:12px; padding:10px 12px; border:1px solid var(--bad); background:var(--bad-bg); color:var(--bad); border-radius:10px; font-size:13px; font-weight:800; line-height:1.5;}
   .bd-list{margin:0; padding:0; list-style:none;}
   .bd-item{display:flex; gap:10px; padding:11px 0; border-bottom:1px solid var(--line); font-size:13.5px; align-items:flex-start;}
   .bd-item:last-child{border-bottom:none;}
@@ -410,11 +418,13 @@
     <div class="card" id="naInfoCard">
       <h2 class="card-title"><span class="icon"><svg><use href="#i-list"></use></svg></span>채점 기준 안내</h2>
       <p class="hint" style="margin-top:0;"><b>해당없음</b>으로 표시한 항목은 채점에서 <b>제외</b>되고, 나머지 항목만으로 <b>100점 만점 환산</b>됩니다. 발생하지 않은 서비스는 <b>해당없음</b>으로 표시하세요. (모든 항목 응답 후에만 결과가 산출됩니다.)</p>
+      <p class="hint" style="margin:8px 0 0;"><b>점검율 등급 상한</b> — 실제 점검한 문항 비율(<b>점검율</b>)이 낮으면 등급에 상한이 적용됩니다. <b>80% 이상</b> 제한 없음 · <b>60% 이상</b> A · <b>50% 이상</b> B · <b>50% 미만</b> C(재점검 계획 대상). 상한은 등급을 낮추기만 하며 올리지는 않습니다.</p>
       <div id="r-nainfo" class="hint" style="margin-top:8px;"></div>
     </div>
     <div class="card score-card">
       <div class="score-num" id="r-score">0<small> / 100</small></div>
       <div class="grade" id="r-grade">-</div>
+      <p class="cap-note" id="r-capnote" style="display:none;"></p>
       <p class="hint" id="r-bonus" style="margin:8px 0 0; color:var(--gold); font-weight:700; display:none;"></p>
       <p class="hint" id="r-norminfo" style="margin:8px 0 0; display:none;"></p>
       <div class="stat-row">
@@ -423,6 +433,8 @@
         <div class="stat"><b id="r-x" style="color:var(--bad)">0</b><span>× 불이행</span></div>
         <div class="stat"><b id="r-rule" style="color:var(--bad)">0</b><span>위반</span></div>
       </div>
+      <div class="rate-box" id="r-rate"></div>
+      <div class="recheck-warn" id="r-recheck" style="display:none;"></div>
       <p class="hint" id="r-unanswered" style="margin-top:14px;"></p>
     </div>
 
@@ -620,8 +632,15 @@ const LS = { hist:"kim_mot_history_v1", set:"kim_mot_settings_v1", draft:"kim_mo
 const DEFAULT_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwc2LY-9Cx1UsRXg5sZ8nwfo6wnXcTIQX0-6eenoTff7SL9FZFT8ENCwryOmseK6VWgZQ/exec";
 
 /* ---------- 앱 버전 & 변경 이력 (최신이 위) ---------- */
-const APP_VERSION = "1.15.0";
+const APP_VERSION = "1.16.0";
 const CHANGELOG = [
+  {v:"1.16.0", date:"2026-07-22", items:[
+    "결과 화면에 점검율 표시 — 해당없음·미응답을 제외한 실제 점검 문항 비율을 점수 카드에 추가 (예: 30 / 35 문항 점검 = 85.7%)",
+    "분모는 선택한 주문방식(직접주문·테이블오더)에 따라 실제 노출된 문항 수 기준",
+    "점검율 등급 상한 도입 — 80% 이상 제한 없음 · 60% 이상 A · 50% 이상 B · 50% 미만 C(재점검 계획 대상). 최종 등급은 점수 등급과 상한 중 낮은 쪽이며 상한이 등급을 올리지는 않음",
+    "상한이 실제로 등급을 낮춘 경우 결과 화면에 사유 한 줄 표시, 점검율 50% 미만이면 재점검 대상 경고 표시",
+    "점검 이력에서 과거 결과를 다시 볼 때도 동일하게 표시 (배점·감점 로직과 구글 시트 전송 컬럼 구성은 변경 없음 — '등급' 값에 상한만 반영)",
+  ]},
   {v:"1.15.0", date:"2026-07-09", items:[
     "등급 체계 확대 — S·A·B·C·D·F 6단계로 세분화 (C 60~69, D 50~59, F 50 미만)",
     "점검 안내 문구 갱신 및 등급 배지 색상 재정비",
@@ -720,6 +739,8 @@ let deferredInstallPrompt = null;
 /* ---------- 유틸 ---------- */
 function $(id){return document.getElementById(id);}
 function esc(s){return String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));}
+// 점검율 표기: 소수점 1자리, 정수면 소수점 생략 (100 / 85.7)
+function fmtRate(n){ const v=Math.round((Number(n)||0)*10)/10; return Number.isInteger(v)? String(v) : v.toFixed(1); }
 function todayStr(){const d=new Date();return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");}
 function weekdayOf(str){const d=new Date(str+"T00:00:00");return isNaN(d)?"":WEEKDAYS[d.getDay()];}
 function uid(){return "MOT-"+Date.now().toString(36)+"-"+Math.floor(performance.now()).toString(36);}
@@ -1048,6 +1069,10 @@ function setRuleAction(no,v){ if(!session.rules[no]) session.rules[no]={}; sessi
 function itemMax(it){ return (it && it.px) ? it.px : 2; }          // 불이행 시 차감(=문항 배점)
 // 응답별 감점: 이행=0 / 미흡=절반 / 불이행=만점 / 해당없음·미응답=채점 제외(감점 아님)
 function penaltyOf(it, v){ const m=itemMax(it); return v==="X"?m : v==="T"?m/2 : 0; }
+/* 점검율 등급 상한 — 80%↑ 제한 없음 / 60%↑ A / 50%↑ B / 50% 미만 C(재점검 계획 대상) */
+const GRADE_ORDER = ["S","A","B","C","D","F"];                     // 등급 서열(왼쪽이 상위)
+function capOfRate(total, rate){ if(!total) return null; return rate>=80? null : rate>=60? "A" : rate>=50? "B" : "C"; }
+function applyCap(g, cap){ if(!cap) return g; return GRADE_ORDER.indexOf(cap)>GRADE_ORDER.indexOf(g) ? cap : g; }  // 낮은 쪽 채택(상향 없음)
 function compute(){
   const allStages=visibleStages();
   const items=visibleItems();                                     // 전체 문항 채점(단계 선택 없음)
@@ -1073,9 +1098,15 @@ function compute(){
     const its=items.filter(i=>i.stage===st);
     return its.length>0 && its.every(i=>(session.answers[i.no]||{}).value==="N");
   });
-  const grade=score>=90?"S":score>=80?"A":score>=70?"B":score>=60?"C":score>=50?"D":"F";
+  const inspected=items.length-na-unanswered;                     // 실제 점검한 문항 수(해당없음·미응답 제외)
+  const inspectRate=items.length>0 ? inspected/items.length*100 : 0;   // 점검율(점검 커버리지, %) — 분모는 주문방식별 노출 문항 수
+  const rateShown=Math.round(inspectRate*10)/10;                  // 표시값(소수점 1자리)과 동일 기준으로 상한 판정
+  const gradeBeforeCap=score>=90?"S":score>=80?"A":score>=70?"B":score>=60?"C":score>=50?"D":"F";
+  const gradeCap=capOfRate(items.length, rateShown);              // 점검율 등급 상한(없으면 null)
+  const needsRecheck=items.length>0 && rateShown<50;              // 점검율 50% 미만 → 재점검 계획 대상
+  const grade=applyCap(gradeBeforeCap, gradeCap);                 // 최종 등급 = 점수 등급·상한 중 낮은 쪽
   return {items,ok,tri,x,na,deduct,maxDeduct,unanswered,bonus,ruleViolations,ruleDeduct,score,grade,stageMap,
-          rawScore,normScore,allStages,naStages};
+          rawScore,normScore,allStages,naStages,inspected,inspectRate,gradeBeforeCap,gradeCap,needsRecheck};
 }
 
 /* ---------- 결과 화면 ---------- */
@@ -1088,6 +1119,13 @@ function buildResult(){
   else{ sb.disabled=false; sb.innerHTML=`${icon('i-send')}구글 시트로 결과 전송`; $("sendHint").textContent=""; }
   $("r-score").innerHTML=`${r.score}<small> / 100</small>`;
   const g=$("r-grade"); g.textContent="등급 "+r.grade; g.className="grade grade-"+r.grade;
+  const cn=$("r-capnote");                                 // 점검율 등급 상한이 실제로 등급을 낮춘 경우에만 안내
+  if(cn){
+    if(r.gradeCap && r.grade!==r.gradeBeforeCap){
+      cn.style.display="block";
+      cn.textContent=`점검율 ${fmtRate(r.inspectRate)}% · 등급 상한 ${r.gradeCap} 적용 (점수 등급 ${r.gradeBeforeCap})`;
+    } else { cn.style.display="none"; cn.textContent=""; }
+  }
   $("r-ok").textContent=r.ok; $("r-tri").textContent=r.tri; $("r-x").textContent=r.x; $("r-rule").textContent=r.ruleViolations.length;
   const b=$("r-bonus");
   if(r.bonus>0){ b.style.display="block"; b.textContent=`★ 가산점 +${r.bonus}점 반영됨`; } else { b.style.display="none"; }
@@ -1104,6 +1142,19 @@ function buildResult(){
     nai.innerHTML = r.naStages.length
       ? `제외된 단계(전 항목 해당없음): <b>${esc(r.naStages.join(", "))}</b>`
       : (r.na? `해당없음 <b>${r.na}</b>건이 채점에서 제외되었습니다.` : `해당없음으로 제외된 항목이 없습니다.`);
+  }
+  const rb=$("r-rate");                                    // 점검율(해당없음·미응답 제외한 실제 점검 비율)
+  if(rb){
+    const ex=[];
+    if(r.na) ex.push(`해당없음 ${r.na}`);
+    if(r.unanswered) ex.push(`미응답 ${r.unanswered}`);
+    rb.innerHTML=`<div class="rate-line"><span class="rate-label">점검율</span><span class="rate-value">${fmtRate(r.inspectRate)}%</span></div>`
+      + `<div class="rate-sub">${r.inspected} / ${r.items.length} 문항 점검${ex.length?` (${ex.join(" · ")})`:``}</div>`;
+  }
+  const rw=$("r-recheck");                                 // 점검율 50% 미만 경고
+  if(rw){
+    if(r.needsRecheck){ rw.style.display="block"; rw.textContent="⚠️ 점검율 50% 미만 — 재점검 계획 대상"; }
+    else { rw.style.display="none"; rw.textContent=""; }
   }
   $("r-unanswered").innerHTML = r.unanswered
     ? `⚠️ 미응답 <b>${r.unanswered}</b>건은 채점에서 제외됐어요. 정확한 점수를 위해 모든 항목에 응답해 주세요.`
